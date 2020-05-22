@@ -1,31 +1,35 @@
 package algorithm
 
+import java.util.concurrent.Executors
+
 /**
- * This class implements an algorithm, inspired by the 'Five-guess algorithm' to solve the mastermind game.
- * It doesn't follow exactly the aforesaid algorithm, but reach anyways a solution.
+ * This class implements an algorithm that focus on speed and memory usage instead of use the minimum number of moves.
  *
  * @author Paolo Baldini
  */
 class AttackerStrategy : Challenger {
-    private val possible: MutableSet<Code> = Code.codes.toMutableSet()
-    private var attempt: Code = Code(1122)
+    private val previousResults = mutableListOf<Pair<Code, Result>>()
+    private val iterator = Code.codes()
+    private var attempt: Code = Code()
 
     override fun makeAttempt(): Code = attempt
 
     override fun attemptResult(response: Result) {
-        if (response.isCorrect()) possible.apply { clear() }.add(attempt)
+        if (response.isCorrect()) println("Won!")
         else {
-            possible.removeIf { attempt.guess(it) != response }
+            previousResults.add(Pair(attempt, response))
 
-            val bestGuesses = Code.codes.toList().sortedBy { code ->
-                val minMaxTable = (0..Code.secretLength).map { IntArray(Code.secretLength +1 -it) }
+            check(iterator.hasNext())
 
-                possible.map { code.guess(it) }.forEach { minMaxTable[it.black][it.white]++ }
+            attempt = iterator.next()
 
-                possible.size - minMaxTable.maxBy { it.max()!! }!!.max()!!
+            val time = System.currentTimeMillis()
+
+            while (previousResults.any { it.first.guess(attempt) != it.second } && iterator.hasNext()) {
+                attempt = iterator.next()
             }
 
-            attempt = bestGuesses.findLast { possible.contains(it) } ?: bestGuesses.last()
+            println(System.currentTimeMillis() - time)
         }
     }
 }
