@@ -7,7 +7,7 @@ package algorithm
  */
 class CodeMakerImpl : CodeMaker {
 
-    override val answer = Code()
+    override val secret = Code()
 
-    override fun verify(guess: Code) = answer.guess(guess).apply { println(answer) }
+    override fun verify(guess: Code) = secret.guess(guess)
 }

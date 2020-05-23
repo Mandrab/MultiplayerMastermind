@@ -1,6 +1,5 @@
 package algorithm
 
-import java.util.stream.Stream
 import kotlin.math.pow
 import kotlin.random.Random
 
@@ -11,7 +10,7 @@ import kotlin.random.Random
  * @author Paolo Baldini
  */
 class Code(code: Array<Int> = Array(secretLength) { Random.nextInt(alphabetChars) }) {
-    private val code: IntArray = code.toIntArray()
+    val code: IntArray = code.toIntArray()
 
     fun guess(attempt: Code): Result {
         val black = code.filterIndexed { idx, it -> it == attempt.code[idx] }.count()

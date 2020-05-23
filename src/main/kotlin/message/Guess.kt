@@ -2,11 +2,11 @@ package message
 import akka.actor.typed.ActorRef
 
 data class Guess(
-        val actor: ActorRef<Message>,
+        override val sender: ActorRef<Message>,
         val turn: Int,
         val attempt: Array<Int>,
         val playerID: String
-): Message(actor) {
+): Message {
 
     override fun equals(other: Any?): Boolean {
         /*if (this === other) return true

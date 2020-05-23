@@ -8,4 +8,4 @@ enum class Distance {
     CORRECT_PLACE
 }
 
-data class CheckResult(val actor: ActorRef<Message>, val correctPlace: Int, val wrongPlace: Int): Message(actor)
+data class CheckResult(override val sender: ActorRef<Message>, val correctPlace: Int, val wrongPlace: Int): Message

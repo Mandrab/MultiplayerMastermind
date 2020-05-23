@@ -2,7 +2,7 @@ package message
 
 import akka.actor.typed.ActorRef
 
-data class Try(val actor: ActorRef<Message>, val turn: Int, val attempt: Array<Array<Int>>?): Message(actor) {
+data class Try(override val sender: ActorRef<Message>, val turn: Int, val attempt: Array<Array<Int>>?): Message {
     override fun equals(other: Any?): Boolean {
         /*if (this === other) return true
         if (javaClass != other?.javaClass) return false

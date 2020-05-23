@@ -7,7 +7,7 @@ package algorithm
  */
 interface CodeMaker {
 
-    val answer: Code
+    val secret: Code
 
     fun verify(guess: Code): Result
 }
