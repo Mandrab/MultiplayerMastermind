@@ -2,7 +2,8 @@ package agent
 
 import akka.actor.*
 import message.*
-import kotlin.random.Random
+import java.time.Duration
+import kotlin.time.milliseconds
 
 class ArbiterAgent: AbstractActor() {
 
@@ -45,12 +46,14 @@ class ArbiterAgent: AbstractActor() {
                     if (!this.tryWin) consolePrint(msg.correctPlace, msg.wrongPlace) else checkWin(msg.correctPlace, msg.wrongPlace)
                 }
                 .match(Try::class.java){ msg ->
+                    //TODO: verificare cosa torna Paul
                     var children = context.children
                     var i = -1
                     children.forEach{i++; it.tell(Check(msg.attempt!![i]), self)}
                     this.tryWin = true
                 }
                 .match(ReceiveTimeout::class.java) {msg ->
+                    context.actorSelection(this.idPlayer).tell(LostTurn("Lost Turn"),self)  //TODO: forse ha senso creare un messaggio di Lost da mandare all'actor che ha perso il turno
                     System.out.println("The "+ this.idPlayer + "lost turn")
                     turn()
                 }
@@ -77,14 +80,10 @@ class ArbiterAgent: AbstractActor() {
         this.idPlayer = "Player" + selectPlayerTurn
         val playerTurn = context.actorSelection(this.idPlayer)
         playerTurn.tell(ExecTurn(turnNumber), self)
+        context.system.scheduler.scheduleOnce(Duration.ofMillis(10), ReceiveTimeout::class.java, self)
         this.effectivePlayerTurn++
         if ( this.effectivePlayerTurn == this.playerNumber)  turnNumber++
     }
-
-    private fun randomTurn() : Int{
-        return Random.nextInt(0,this.playerNumber)
-    }
-
 
     private fun consolePrint(correctPlace: Int, wrongPlace:Int){
         System.out.println("The "+ this.idPlayer + " guessed " + correctPlace + " digits in rights place and " + wrongPlace + " digits in a wrong place." )
