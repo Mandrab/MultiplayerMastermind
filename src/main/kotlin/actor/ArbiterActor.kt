@@ -30,7 +30,7 @@ class ArbiterActor: AbstractActor() {
     override fun preStart() {
         super.preStart()
         Adapter.toTyped(context.system).receptionist().tell(Receptionist
-                .register(Services.startGameServiceKey, Adapter.toTyped(self)))
+                .register(Services.Service.START_GAME.key, Adapter.toTyped(self)))
     }
 
     private fun start(msg: StartGame) : List<ActorRef<Message>> {
@@ -39,7 +39,7 @@ class ArbiterActor: AbstractActor() {
         this.turnArray = (0 until playerNumber).toList().toTypedArray()
 
         val players = (0 until playerNumber).map {
-            Adapter.spawn(context, PlayerActor.create("Player$it"), "Player$it") }
+            Adapter.spawn(context, PlayerActor.create("Player$it", it), "Player$it") }
         //TODO ? Adapter.watch(context, player)
         return players.onEach { it.tell(StartGame(typedSelf, playerNumber, secretValueLength, players)) }
     }
@@ -60,7 +60,7 @@ class ArbiterActor: AbstractActor() {
                 }
                 .match(CheckResult::class.java) { msg ->
                     // TODO check
-                    if (!this.tryWin) consolePrint(msg.correctPlace, msg.wrongPlace) else checkWin(msg.correctPlace, msg.wrongPlace)
+                    if (!this.tryWin) consolePrint(msg.black, msg.white) else checkWin(msg.black, msg.white)
                     playerX.tell(WannaTry(typedSelf, this.turnNumber))
                 }
                 .match(Try::class.java){ msg ->

@@ -16,8 +16,9 @@ class Visualization : JFrame() {
         add(JTextField("Players").apply { isEditable = false }, gbc)
 
         gbc.gridy = 1
+        playersID.selectionMode = DefaultListSelectionModel.SINGLE_SELECTION
         playersID.addListSelectionListener {
-            JOptionPane.showMessageDialog(this, "")
+            players[playersID.selectedValue]?.isVisible = true
         }
         add(JScrollPane(playersID), gbc)
 
@@ -36,11 +37,13 @@ class Visualization : JFrame() {
             val gbc = GridBagConstraints()
 
             gbc.fill = GridBagConstraints.BOTH
-            add(JTextField("Attempts"), gbc)
+            add(JTextField("Attempts").apply { isEditable = false }, gbc)
 
             gbc.gridy = 1
+            attemptsList.selectionMode = DefaultListSelectionModel.SINGLE_SELECTION
             add(JScrollPane(attemptsList), gbc)
 
+            defaultCloseOperation = WindowConstants.HIDE_ON_CLOSE
             isResizable = false
             pack()
         }
@@ -54,8 +57,9 @@ class Visualization : JFrame() {
 
     fun newResult(attacker: String, defender: String, black: Int, white: Int) {
         players[attacker]?.let {
-            it.attempts.add("$defender black: $black white: $white")
+            it.attempts.add("$defender    |    black: $black    white: $white    ")
             it.attemptsList.setListData(it.attempts.toTypedArray())
+            it.pack()
         }
     }
 }
