@@ -13,7 +13,7 @@ class Visualization : JFrame() {
         val gbc = GridBagConstraints()
 
         gbc.fill = GridBagConstraints.BOTH
-        add(JTextField("Players"), gbc)
+        add(JTextField("Players").apply { isEditable = false }, gbc)
 
         gbc.gridy = 1
         playersID.addListSelectionListener {
@@ -28,6 +28,7 @@ class Visualization : JFrame() {
 
     private class Dialog(frame: JFrame, playerID: String) : JDialog(frame, playerID) {
         val attempts = mutableListOf<String>()
+        val attemptsList = JList<String>()
 
         init {
             layout = GridBagLayout()
@@ -37,8 +38,9 @@ class Visualization : JFrame() {
             add(JTextField("Attempts"), gbc)
 
             gbc.gridy = 1
-            add(JScrollPane(JList(attempts.toTypedArray())), gbc)
+            add(JScrollPane(attemptsList), gbc)
 
+            defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
             isResizable = false
             pack()
         }
@@ -46,9 +48,13 @@ class Visualization : JFrame() {
 
     fun newPlayer(ID: String) {
         players[ID] = Dialog(this, ID)
+        playersID.setListData(players.keys.toTypedArray())
     }
 
     fun newResult(attacker: String, defender: String, black: Int, white: Int) {
-        players[attacker]?.attempts?.add("$defender black: $black white: $white")
+        players[attacker]?.let {
+            it.attempts.add("$defender black: $black white: $white")
+            it.attemptsList.setListData(it.attempts.toTypedArray())
+        }
     }
 }

@@ -10,7 +10,7 @@ import java.time.Duration
 
 
 class ArbiterActor: AbstractActor() {
-    private val typedActor = Adapter.toTyped<Message>(self)
+    private val typedSelf = Adapter.toTyped<Message>(self)
 
     private var secretValueLength : Int= 0
     private var playerNumber: Int = 0
@@ -33,44 +33,45 @@ class ArbiterActor: AbstractActor() {
                 .register(Services.startGameServiceKey, Adapter.toTyped(self)))
     }
 
-    private fun start(msg:StartGame) {
+    private fun start(msg: StartGame) : List<ActorRef<Message>> {
         this.secretValueLength = msg.secretLength
         this.playerNumber = msg.playerCount
         this.turnArray = (0 until playerNumber).toList().toTypedArray()
 
-        val players = (0 until playerNumber).map { Adapter.spawn(context, PlayerActor.create("Player$it"), "Player$it") }
+        val players = (0 until playerNumber).map {
+            Adapter.spawn(context, PlayerActor.create("Player$it"), "Player$it") }
         //TODO ? Adapter.watch(context, player)
-        players.forEach { it.tell(StartGame(typedActor, this.playerNumber, this.secretValueLength, players)) }
+        return players.onEach { it.tell(StartGame(typedSelf, playerNumber, secretValueLength, players)) }
     }
 
     override fun createReceive(): Receive {
         return receiveBuilder()
                 .match(StartGame::class.java) { msg ->
-                    start(msg)
+                    start(msg).let { msg.sender.tell(GamePlayers(typedSelf, it)) }
                     turn()
                 }
                 .match(Guess::class.java){ msg ->
                     if (msg.playerID.equals(this.idPlayer)) {
                         val playerID = context.actorSelection(msg.playerID);
-                        playerID.tell(Check(typedActor, msg.attempt), self)
+                        playerID.tell(Check(typedSelf, msg.attempt), self)
                         this.idPlayer = msg.playerID
                         playerX = msg.sender
-                    } else context.children.forEach{it.tell(NotCheck(typedActor, msg.playerID, msg.turn),self)}
+                    } else context.children.forEach{it.tell(NotCheck(typedSelf, msg.playerID, msg.turn),self)}
                 }
                 .match(CheckResult::class.java) { msg ->
                     // TODO check
                     if (!this.tryWin) consolePrint(msg.correctPlace, msg.wrongPlace) else checkWin(msg.correctPlace, msg.wrongPlace)
-                    playerX.tell(WannaTry(typedActor, this.turnNumber))
+                    playerX.tell(WannaTry(typedSelf, this.turnNumber))
                 }
                 .match(Try::class.java){ msg ->
                     //TODO: verificare cosa torna Paul
                     var children = context.children
                     var i = -1
-                    children.forEach{i++; it.tell(Check(typedActor, msg.attempt!![i]), self)}
+                    children.forEach{i++; it.tell(Check(typedSelf, msg.attempt!![i]), self)}
                     this.tryWin = true
                 }
                 .match(ReceiveTimeout::class.java) {msg ->
-                    context.actorSelection(this.idPlayer).tell(LostTurn(typedActor, "Lost Turn"),self)  //TODO: forse ha senso creare un messaggio di Lost da mandare all'actor che ha perso il turno
+                    context.actorSelection(this.idPlayer).tell(LostTurn(typedSelf, "Lost Turn"),self)  //TODO: forse ha senso creare un messaggio di Lost da mandare all'actor che ha perso il turno
                     System.out.println("The "+ this.idPlayer + "lost turn")
                     turn()
                 }
@@ -96,7 +97,7 @@ class ArbiterActor: AbstractActor() {
         this.index++
         this.idPlayer = "Player" + selectPlayerTurn
         val playerTurn = context.actorSelection(this.idPlayer)
-        playerTurn.tell(ExecTurn(typedActor, turnNumber), self)
+        playerTurn.tell(ExecTurn(typedSelf, turnNumber), self)
         context.system.scheduler.scheduleOnce(Duration.ofMillis(10)!!, {
             TODO()
         }, context.system.dispatcher)
@@ -115,7 +116,7 @@ class ArbiterActor: AbstractActor() {
         }
         if (this.numberOfCheck == this.playerNumber) {// se tutti i tentaivi sono stati sottomessi
             this.tryWin = false
-            if (this.checkSecretNumber == this.numberOfCheck) context.children.forEach { it.tell(End(typedActor, this.idPlayer), self) } else context.children.forEach { it.tell(Ban(typedActor, this.idPlayer), self) }
+            if (this.checkSecretNumber == this.numberOfCheck) context.children.forEach { it.tell(End(typedSelf, this.idPlayer), self) } else context.children.forEach { it.tell(Ban(typedSelf, this.idPlayer), self) }
         }
     }
 }

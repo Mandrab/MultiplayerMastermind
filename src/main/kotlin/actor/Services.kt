@@ -16,12 +16,18 @@ object Services {
 
     val observeResultService = ServiceKey.create(Message::class.java, "playerService")
 
-    fun broadcastList(key: ServiceKey<Message>, context: ActorContext<Message>, msg: Message? = null) = context.system
-            .receptionist().tell(Receptionist.find(key, listingAdapter(context, key, msg)))
+    fun unicast(key: ServiceKey<Message>, context: ActorContext<Message>, msg: Message? = null) = context.system
+            .receptionist().tell(Receptionist.find(key, context.messageAdapter(Receptionist.Listing::class.java) {
+                Unicast(msg, it, key) } ))
 
-    private fun listingAdapter(context: ActorContext<Message>, key: ServiceKey<Message>? = null, msg: Message? = null)
-            : TypedActorRef<Receptionist.Listing> = context.messageAdapter(Receptionist.Listing::class.java) {
-        Broadcast(msg, it, key) }
+    fun broadcastList(key: ServiceKey<Message>, context: ActorContext<Message>, msg: Message? = null) = context.system
+            .receptionist().tell(Receptionist.find(key, context.messageAdapter(Receptionist.Listing::class.java) {
+                Broadcast(msg, it, key) }))
+
+    class Unicast (val msg: Message?, listing: Receptionist.Listing, key: ServiceKey<Message>?): Message {
+        override val sender: TypedActorRef<Message> = Adapter.toTyped(ActorRef.noSender())
+        val actor: TypedActorRef<Message> = listing.allServiceInstances(key).last()
+    }
 
     class Broadcast (val msg: Message?, listing: Receptionist.Listing, key: ServiceKey<Message>?): Message {
         override val sender: TypedActorRef<Message> = Adapter.toTyped(ActorRef.noSender())

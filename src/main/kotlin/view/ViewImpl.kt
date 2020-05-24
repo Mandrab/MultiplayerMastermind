@@ -10,7 +10,7 @@ import java.awt.event.ActionListener
 import javax.swing.*
 
 class ViewImpl : JFrame(), View {
-    private var visualization: Visualization? = null
+    private val visualization: Visualization = Visualization()
     private val playerN = JTextField("6")
     private val secretLength = JTextField("4")
     private val humanPlayer = JCheckBox()
@@ -44,38 +44,21 @@ class ViewImpl : JFrame(), View {
         gbc.gridy = 3
         add(JButton("Start").apply { addActionListener(object : ActionListener {
             override fun actionPerformed(e: ActionEvent) {
-                visualization = Visualization()
                 actor.tell(StartGame(actor, playerN.text.toInt(), secretLength.text.toInt(), emptyList()))
                 isVisible = false
+                dispose()
             }
         }) }, gbc)
 
+        defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
         isResizable = false
         pack()
         isVisible = true
     }
 
-    private class Dialog(frame: JFrame, playerID: String) : JDialog(frame, playerID) {
-        val attempts = mutableListOf<String>()
-
-        init {
-            layout = GridBagLayout()
-            val gbc = GridBagConstraints()
-
-            gbc.fill = GridBagConstraints.BOTH
-            add(JTextField("Attempts"), gbc)
-
-            gbc.gridy = 1
-            add(JScrollPane(JList(attempts.toTypedArray())), gbc)
-
-            isResizable = false
-            pack()
-        }
-    }
-
-    override fun newPlayer(ID: String) { visualization?.newPlayer(ID) }
+    override fun newPlayer(ID: String) { visualization.newPlayer(ID) }
 
     override fun newResult(attacker: String, defender: String, black: Int, white: Int) {
-        visualization?.newResult(attacker, defender, black, white)
+        visualization.newResult(attacker, defender, black, white)
     }
 }

@@ -1,25 +1,27 @@
 package actor
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.javadsl.AbstractBehavior
-import akka.actor.typed.javadsl.ActorContext
-import akka.actor.typed.javadsl.Behaviors
-import akka.actor.typed.javadsl.Receive
+import akka.actor.typed.javadsl.*
 import message.CheckResult
+import message.GamePlayers
 import message.Message
 import message.StartGame
 import view.View
 
 class ViewActor(context: ActorContext<Message>, private val view: View) : AbstractBehavior<Message>(context) {
-    override fun createReceive(): Receive<Message> = newReceiveBuilder().onMessage(StartGame::class.java) { apply {
-        Services.broadcastList(Services.startGameServiceKey, context, it)
-    } }.onMessage(Services.Broadcast::class.java) { broadcast -> apply {
-        broadcast.msg?.let { broadcast.actors.foreach { it.tell(broadcast.msg) } }
-    } }.onMessage(CheckResult::class.java) { apply {
+
+    fun idle() : Behavior<Message> = newReceiveBuilder()
+            .onMessage(StartGame::class.java) { Services.unicast(Services.startGameServiceKey, context,
+                    StartGame(context.self, it.playerCount, it.secretLength, it.players)); idle() }
+            .onMessage(Services.Unicast::class.java) { res -> res.msg?.let { res.actor.tell(res.msg) }; idle() }
+            .onMessage(GamePlayers::class.java) { it -> it.players.forEach { view.newPlayer(Adapter.toClassic(it)
+                    .path().name()) }; idle() }.build()
+
+    override fun createReceive(): Receive<Message> = newReceiveBuilder().onMessage(CheckResult::class.java) { apply {
         view.newResult(it.mainReceiver, it.sender.toString(), it.correctPlace, it.wrongPlace)
     } }.build()
 
     companion object {
-        fun create(view: View): Behavior<Message> = Behaviors.setup { ViewActor(it, view) }
+        fun create(view: View): Behavior<Message> = Behaviors.setup { ViewActor(it, view).idle() }
     }
 }
