@@ -1,6 +1,7 @@
 import algorithm.AttackerStrategy
 import algorithm.Code
 import algorithm.CodeMakerImpl
+import view.ViewImpl
 
 fun main() {
 /*    val system: ActorSystem = ActorSystem.create("Mastermind")
@@ -22,6 +23,7 @@ fun main() {
     } while (!response.isCorrect())
 
     println(System.currentTimeMillis() - time)*/
+    //ViewImpl()
 
     Code.alphabetChars = 6         // alphabet
     Code.secretLength = 10          // length

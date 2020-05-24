@@ -45,8 +45,6 @@ class Code(code: Array<Int> = Array(secretLength) { Random.nextInt(alphabetChars
             solutionsCount = alphabetChars.toDouble().pow(secretLength).toInt()
 
             var previousCode = Code(Array(secretLength) { 0 })
-            //codes = mutableSetOf(previousCode).apply { addAll((1..solutionsCount)
-            //        .map { next(previousCode).also { previousCode = it } }) }
         }
 
         private fun next(code: Code): Code {
