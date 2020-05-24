@@ -21,6 +21,7 @@ class Visualization : JFrame() {
         }
         add(JScrollPane(playersID), gbc)
 
+        defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
         isResizable = false
         pack()
         isVisible = true
@@ -40,7 +41,6 @@ class Visualization : JFrame() {
             gbc.gridy = 1
             add(JScrollPane(attemptsList), gbc)
 
-            defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
             isResizable = false
             pack()
         }
@@ -49,6 +49,7 @@ class Visualization : JFrame() {
     fun newPlayer(ID: String) {
         players[ID] = Dialog(this, ID)
         playersID.setListData(players.keys.toTypedArray())
+
     }
 
     fun newResult(attacker: String, defender: String, black: Int, white: Int) {
