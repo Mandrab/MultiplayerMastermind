@@ -2,26 +2,53 @@ package view
 
 import akka.actor.typed.ActorRef
 import message.Message
+import message.StartGame
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.awt.event.ActionEvent
+import java.awt.event.ActionListener
 import javax.swing.*
 
-class ViewImpl(private val actor: ActorRef<Message>) : JFrame(), View {
-    private val players = mutableMapOf<String, Dialog>()
-    private val playersID = JList(emptyArray<String>())
+class ViewImpl : JFrame(), View {
+    private var visualization: Visualization? = null
+    private val playerN = JTextField("6")
+    private val secretLength = JTextField("4")
+    private val humanPlayer = JCheckBox()
+
+    override lateinit var actor: ActorRef<Message>
 
     init {
         layout = GridBagLayout()
         val gbc = GridBagConstraints()
 
         gbc.fill = GridBagConstraints.BOTH
-        add(JTextField("Players"), gbc)
+        add(JTextField("Players Number:").apply { isEditable = false }, gbc)
 
         gbc.gridy = 1
-        playersID.addListSelectionListener {
-            JOptionPane.showMessageDialog(this, "")
-        }
-        add(JScrollPane(playersID), gbc)
+        add(JTextField("Secret Length:").apply { isEditable = false }, gbc)
+
+        gbc.gridy = 2
+        add(JTextField("Human Player:").apply { isEditable = false }, gbc)
+
+        gbc.gridx = 1
+
+        gbc.gridy = 0
+        add(playerN, gbc)
+
+        gbc.gridy = 1
+        add(secretLength, gbc)
+
+        gbc.gridy = 2
+        add(humanPlayer, gbc)
+
+        gbc.gridy = 3
+        add(JButton("Start").apply { addActionListener(object : ActionListener {
+            override fun actionPerformed(e: ActionEvent) {
+                visualization = Visualization()
+                actor.tell(StartGame(actor, playerN.text.toInt(), secretLength.text.toInt(), emptyList()))
+                isVisible = false
+            }
+        }) }, gbc)
 
         isResizable = false
         pack()
@@ -46,11 +73,9 @@ class ViewImpl(private val actor: ActorRef<Message>) : JFrame(), View {
         }
     }
 
-    override fun newPlayer(ID: String) {
-        players[ID] = Dialog(this, ID)
-    }
+    override fun newPlayer(ID: String) { visualization?.newPlayer(ID) }
 
     override fun newResult(attacker: String, defender: String, black: Int, white: Int) {
-        players[attacker]?.attempts?.add("$defender black: $black white: $white")
+        visualization?.newResult(attacker, defender, black, white)
     }
 }

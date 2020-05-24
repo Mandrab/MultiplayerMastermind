@@ -2,4 +2,9 @@ package message
 
 import akka.actor.typed.ActorRef
 
-data class StartGame(override val sender: ActorRef<Message>, val playerCount: Int, val secretValueLength: Int): Message
+data class StartGame(
+        override val sender: ActorRef<Message>,
+        val playerCount: Int,
+        val secretValueLength: Int,
+        val players: List<ActorRef<Message>>
+): Message
