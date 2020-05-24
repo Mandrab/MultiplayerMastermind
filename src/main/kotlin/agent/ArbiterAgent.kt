@@ -3,7 +3,6 @@ package agent
 import akka.actor.*
 import message.*
 import java.time.Duration
-import kotlin.time.milliseconds
 
 class ArbiterAgent: AbstractActor() {
 
@@ -24,7 +23,7 @@ class ArbiterAgent: AbstractActor() {
         this.turnArray = arrayOf(this.playerNumber)
         for( i in 1..this.playerNumber){
             val player = context.actorOf(Props.create(PlayerAgent::class.java), "Player" + i);
-            player.tell(StartMsg(this.secretValueLength), self);
+            player.tell(StartMsg(this.secretValueLength, player), self);
         }
     }
 
@@ -80,7 +79,7 @@ class ArbiterAgent: AbstractActor() {
         this.idPlayer = "Player" + selectPlayerTurn
         val playerTurn = context.actorSelection(this.idPlayer)
         playerTurn.tell(ExecTurn(turnNumber), self)
-        context.system.scheduler.scheduleOnce(Duration.ofMillis(10), ReceiveTimeout::class.java, self)
+        context.system.scheduler.scheduleOnce(Duration.ofMillis(10)!!, ReceiveTimeout::class.java!!, self )
         this.effectivePlayerTurn++
         if ( this.effectivePlayerTurn == this.playerNumber)  turnNumber++
     }
