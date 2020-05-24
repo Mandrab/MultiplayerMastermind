@@ -9,22 +9,10 @@ import algorithm.CodeMaker
 import algorithm.Result
 import message.*
 
-
 class PlayerActor private constructor(
         context: ActorContext<Message>,
         private val playerID: String
 ) : AbstractBehavior<Message>(context), CodeMaker {
-    private var valueSize: Int = 4
-        set(value) {
-            field = value
-            Code.secretLength = value
-        }
-    private var playerNum: Int = 1
-        set(value) {
-            field = value
-            Array(playerNum -1) { AttackerStrategy() }
-        }
-
     private lateinit var gameState: Map<ActorRef<Message>, AttackerStrategy>
     private var lastAttemptPlayer: Pair<ActorRef<Message>, AttackerStrategy>? = null
     private var waitingCheck = false
@@ -43,10 +31,10 @@ class PlayerActor private constructor(
             .onMessage(Update::class.java, update)
             .build()
 
-    fun idle(): Behavior<Message> = Behaviors.receive(Message::class.java).onMessage(StartGame::class.java) { it ->
+    fun idle(): Behavior<Message> = Behaviors.receive(Message::class.java).onMessage(StartGame::class.java) { apply {
+        Code.secretLength = it.secretLength
         gameState = it.players.map { Pair(it, AttackerStrategy()) }.toMap()
-        this
-    }.build()
+    } }.build()
 
     private val execTurn: (ExecTurn) -> Behavior<Message> = { exec -> also {
         lastAttemptPlayer = gameState.entries.firstOrNull { it.value.ready }?.also {
@@ -57,7 +45,6 @@ class PlayerActor private constructor(
 
     private val check: (Check) -> Behavior<Message> = { check -> also {
         val result = secret.guess(Code(check.attempt))
-        // TODO send to all
         val checkResult = CheckResult(context.self, result.black, result.white, playerID)
         check.sender.tell(checkResult)
         gameState.entries.forEach { it.key.tell(checkResult) }
@@ -79,7 +66,7 @@ class PlayerActor private constructor(
         } else result.sender.tell(Try(context.self, result.turn, null))
     } }
 
-    private val update: (Update) -> Behavior<Message> = { _ -> also {
+    private val update: (Update) -> Behavior<Message> = { also {
         gameState.entries.firstOrNull { !it.value.ready }?.value?.tickSearch(30)
     } }
 

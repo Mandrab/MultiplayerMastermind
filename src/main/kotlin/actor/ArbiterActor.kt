@@ -30,11 +30,11 @@ class ArbiterActor: AbstractActor() {
     override fun preStart() {
         super.preStart()
         Adapter.toTyped(context.system).receptionist().tell(Receptionist
-                .register(ArbiterService.arbiterServiceKey, Adapter.toTyped(self)))
+                .register(Services.startGameServiceKey, Adapter.toTyped(self)))
     }
 
     private fun start(msg:StartGame) {
-        this.secretValueLength = msg.secretValueLength
+        this.secretValueLength = msg.secretLength
         this.playerNumber = msg.playerCount
         this.turnArray = (0 until playerNumber).toList().toTypedArray()
 

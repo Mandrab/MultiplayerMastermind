@@ -26,7 +26,7 @@ class Code(code: Array<Int> = Array(secretLength) { Random.nextInt(alphabetChars
     override fun toString() = "Code: ${code.joinToString()}"
 
     companion object {
-        var alphabetChars = 6
+        var alphabetChars = 10
             set(value) { field = value; update() }
         var secretLength = 4
             set(value) { field = value; update() }
