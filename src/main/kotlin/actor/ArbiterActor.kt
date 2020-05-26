@@ -5,7 +5,10 @@ import akka.actor.ReceiveTimeout
 import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.Adapter
 import akka.actor.typed.receptionist.Receptionist
+import akka.pattern.Patterns
+import akka.util.Timeout
 import message.*
+import scala.concurrent.Await
 import java.time.Duration
 
 
@@ -22,9 +25,6 @@ class ArbiterActor: AbstractActor() {
     private var numberOfCheck : Int = 0
     private var turnArray: Array<Int> = arrayOf(0)
     private var index:Int = 0
-
-
-    // TODO
     lateinit var playerX : ActorRef<Message>
 
     override fun preStart() {
@@ -46,49 +46,53 @@ class ArbiterActor: AbstractActor() {
 
     override fun createReceive(): Receive {
         return receiveBuilder()
-                .match(StartGame::class.java) { msg ->
-                    start(msg).let { msg.sender.tell(GamePlayers(typedSelf, it)) }
-                    turn()
-                }
-                .match(Guess::class.java){ msg ->
-                    if (msg.playerID.equals(this.idPlayer)) {
-                        val playerID = context.actorSelection(msg.playerID);
-                        playerID.tell(Check(typedSelf, msg.attempt), self)
-                        this.idPlayer = msg.playerID
-                        playerX = msg.sender
-                    } else context.children.forEach{it.tell(NotCheck(typedSelf, msg.playerID, msg.turn),self)}
-                }
-                .match(CheckResult::class.java) { msg ->
-                    // TODO check
-                    if (!this.tryWin) consolePrint(msg.black, msg.white) else checkWin(msg.black, msg.white)
-                    playerX.tell(WannaTry(typedSelf, this.turnNumber))
-                }
-                .match(Try::class.java){ msg ->
-                    //TODO: verificare cosa torna Paul
-                    var children = context.children
-                    var i = -1
-                    children.forEach{i++; it.tell(Check(typedSelf, msg.attempt!![i]), self)}
-                    this.tryWin = true
-                }
-                .match(ReceiveTimeout::class.java) {msg ->
-                    context.actorSelection(this.idPlayer).tell(LostTurn(typedSelf, "Lost Turn"),self)  //TODO: forse ha senso creare un messaggio di Lost da mandare all'actor che ha perso il turno
-                    System.out.println("The "+ this.idPlayer + "lost turn")
-                    turn()
-                }
+                .match(StartGame::class.java) { msg -> startGame(msg) }
+                .match(Guess::class.java){ msg -> guess(msg) }
+                .match(CheckResult::class.java) { msg -> checkResult(playerX, msg.black, msg.white) }
+                .match(Try::class.java){ msg -> tryWin(msg.attempt) }
+                .match(ReceiveTimeout::class.java) { msg -> lostTurn(this.idPlayer) }
                 .build()
+    }
+
+    private fun startGame(msg: StartGame) {
+        start(msg).let { msg.sender.tell(GamePlayers(typedSelf, it)) }
+        turn()
+    }
+
+    private fun guess(msg: Guess) {
+        if (msg.playerID.equals(this.idPlayer)) {
+            val playerID = context.actorSelection(msg.playerID);
+            playerID.tell(Check(typedSelf, msg.attempt), self)
+            this.idPlayer = msg.playerID
+            System.out.println(msg.sender)
+            playerX = msg.sender
+        } else //TODO: forse si può evitare semplicemente non lo gestisco. Tanto arrriva solo a me.
+         context.children.forEach { it.tell(NotCheck(typedSelf, msg.playerID, msg.turn), self) }
+    }
+
+    private fun checkResult(playerX: ActorRef<Message>, black: Int, white: Int) {
+        System.out.println(playerX)
+        if (!this.tryWin) {
+            consolePrint(black, white)
+            playerX.tell(WannaTry(typedSelf, this.turnNumber))
+        } else checkWin(black, white)
+
+    }
+
+    private fun tryWin(attempt: Array<Array<Int>>?) {
+        if(attempt != null) {
+            var children = context.children
+            var i = -1
+            this.tryWin = true
+            children.forEach { i++; it.tell(Check(typedSelf, attempt[i]), self) }
+        }else {
+            turn()
+            tryWin = false
+        }
     }
 
     private fun turn(){
         var selectPlayerTurn: Int
-        /*if(this.turnArray.size == this.playerNumber-1){
-            this.turnArray.removeAll()
-        }
-        var selectPlayerTurn = randomTurn()
-        while(this.turnArray.contains(selectPlayerTurn)){
-            selectPlayerTurn = randomTurn()
-        }
-        this.turnArray.plus(selectPlayerTurn)
-        */
         if (this.index == this.turnArray.size-1) {
             this.turnArray.sortedArray()
             this.index = 0
@@ -97,10 +101,18 @@ class ArbiterActor: AbstractActor() {
         this.index++
         this.idPlayer = "Player" + selectPlayerTurn
         val playerTurn = context.actorSelection(this.idPlayer)
-        playerTurn.tell(ExecTurn(typedSelf, turnNumber), self)
-        context.system.scheduler.scheduleOnce(Duration.ofMillis(10)!!, {
+
+        val timeout = Timeout.create(Duration.ofSeconds(5))
+        val future = Patterns.ask(playerTurn, ExecTurn(typedSelf, turnNumber), timeout)
+         try {
+             Await.result(future, timeout.duration()).toString()
+         }catch ( e:Exception ){
+             lostTurn(this.idPlayer)
+         }
+        /*context.system.scheduler.scheduleOnce(Duration.ofMillis(10)!!, {
             TODO()
-        }, context.system.dispatcher)
+        }, context.system.dispatcher)*/
+
         this.effectivePlayerTurn++
         if ( this.effectivePlayerTurn == this.playerNumber)  turnNumber++
     }
@@ -116,7 +128,19 @@ class ArbiterActor: AbstractActor() {
         }
         if (this.numberOfCheck == this.playerNumber) {// se tutti i tentaivi sono stati sottomessi
             this.tryWin = false
-            if (this.checkSecretNumber == this.numberOfCheck) context.children.forEach { it.tell(End(typedSelf, this.idPlayer), self) } else context.children.forEach { it.tell(Ban(typedSelf, this.idPlayer), self) }
+            if (this.checkSecretNumber == this.numberOfCheck) {
+                context.children.forEach { it.tell(End(typedSelf, this.idPlayer), self) }
+            }else {
+                context.children.forEach { it.tell(Ban(typedSelf, this.idPlayer), self) }
+                turn()
+            }
         }
     }
+
+    private fun lostTurn(idPlayer : String) {
+        System.out.println("The "+ idPlayer + "lost turn")
+        context.actorSelection(idPlayer).tell(LostTurn(typedSelf, "Lost Turn"),self)
+        turn()
+    }
+
 }
