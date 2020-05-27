@@ -6,5 +6,6 @@ data class Guess(
         override val sender: ActorRef<Message>,
         val turn: Int,
         val attempt: Array<Int>,
-        val playerID: String
+        val attackerID: String,
+        val defenderID: String
 ): Message

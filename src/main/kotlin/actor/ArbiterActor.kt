@@ -5,12 +5,8 @@ import akka.actor.ReceiveTimeout
 import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.Adapter
 import akka.actor.typed.receptionist.Receptionist
-import akka.pattern.Patterns
-import akka.util.Timeout
 import message.*
-import scala.concurrent.Await
-import java.time.Duration
-
+import kotlin.random.Random
 
 class ArbiterActor: AbstractActor() {
     private val typedSelf = Adapter.toTyped<Message>(self)
@@ -18,14 +14,16 @@ class ArbiterActor: AbstractActor() {
     private var secretValueLength : Int= 0
     private var playerNumber: Int = 0
     private var turnNumber: Int = 1
-    private var idPlayer : String  = " "
-    private var effectivePlayerTurn: Int = 0
+    private var idPlayer : String  = ""
     private var tryWin: Boolean = false
     private var checkSecretNumber  = 0
     private var numberOfCheck : Int = 0
     private var turnArray: Array<Int> = arrayOf(0)
     private var index:Int = 0
-    lateinit var playerX : ActorRef<Message>
+    private lateinit var attempterPlayer : ActorRef<Message>
+    private var waitingWin = false
+
+    private lateinit var players: Map<String, ActorRef<Message>>
 
     override fun preStart() {
         super.preStart()
@@ -33,92 +31,108 @@ class ArbiterActor: AbstractActor() {
                 .register(Services.Service.START_GAME.key, Adapter.toTyped(self)))
     }
 
-    private fun start(msg: StartGame) : List<ActorRef<Message>> {
+    private fun start(msg: StartGame) : Collection<ActorRef<Message>> {
         this.secretValueLength = msg.secretLength
         this.playerNumber = msg.playerCount
         this.turnArray = (0 until playerNumber).toList().toTypedArray()
 
-        val players = (0 until playerNumber).map {
-            Adapter.spawn(context, PlayerActor.create("Player$it", it), "Player$it") }
+        players = (0 until playerNumber).map {
+            Pair("Player$it", Adapter.spawn(context, PlayerActor.create("Player$it", it), "Player$it")) }
+                .toMap()
         //TODO ? Adapter.watch(context, player)
-        return players.onEach { it.tell(StartGame(typedSelf, playerNumber, secretValueLength, players)) }
+        return players.values.onEach { it.tell(StartGame(typedSelf, playerNumber, secretValueLength, players.values.toList())) }
+    }
+
+    private fun startGame(msg: StartGame) {
+        start(msg).let { msg.sender.tell(GamePlayers(typedSelf, it.toList())) }      // tell to actor-view
+        turn()
     }
 
     override fun createReceive(): Receive {
         return receiveBuilder()
+                .match(CheckTimeout::class.java) { timeout(it) }
                 .match(StartGame::class.java) { msg -> startGame(msg) }
-                .match(Guess::class.java){ msg -> guess(msg) }
-                .match(CheckResult::class.java) { msg -> checkResult(playerX, msg.black, msg.white) }
-                .match(Try::class.java){ msg -> tryWin(msg.attempt) }
+                .match(Guess::class.java) { msg -> guess(msg) }
+                .match(CheckResult::class.java) { msg -> checkResult(attempterPlayer, msg.black, msg.white) }
+                .match(Try::class.java) { msg -> tryWin(msg.attempt) }
                 .match(ReceiveTimeout::class.java) { msg -> lostTurn(this.idPlayer) }
                 .build()
     }
 
-    private fun startGame(msg: StartGame) {
-        start(msg).let { msg.sender.tell(GamePlayers(typedSelf, it)) }
-        turn()
+    private val timeout: (CheckTimeout) -> Unit = {
+        Thread.sleep(5) //TODO remove
+        if (it.idPlayer == idPlayer && it.turn == turnNumber && !waitingWin) {
+            if (System.currentTimeMillis() - it.time > 5000) lostTurn(idPlayer)
+            else self.tell(it, self)
+        }
     }
 
     private fun guess(msg: Guess) {
-        if (msg.playerID.equals(this.idPlayer)) {
-            val playerID = context.actorSelection(msg.playerID);
-            playerID.tell(Check(typedSelf, msg.attempt), self)
-            this.idPlayer = msg.playerID
-            System.out.println(msg.sender)
-            playerX = msg.sender
-        } else //TODO: forse si può evitare semplicemente non lo gestisco. Tanto arrriva solo a me.
-         context.children.forEach { it.tell(NotCheck(typedSelf, msg.playerID, msg.turn), self) }
+        if (msg.attackerID == idPlayer) {
+            players[msg.defenderID]
+            val playerID = context.actorSelection(msg.defenderID)
+            println("guess " + msg.defenderID + " " + playerID)
+            players[msg.defenderID]?.tell(Check(typedSelf, msg.attempt))
+            println("sned")
+            attempterPlayer = msg.sender
+        }
     }
 
-    private fun checkResult(playerX: ActorRef<Message>, black: Int, white: Int) {
-        System.out.println(playerX)
+    private fun checkResult(attempterPlayer: ActorRef<Message>, black: Int, white: Int) {
+        println("checkresult")
         if (!this.tryWin) {
             consolePrint(black, white)
-            playerX.tell(WannaTry(typedSelf, this.turnNumber))
+            waitingWin = true
+            attempterPlayer.tell(WannaTry(typedSelf, this.turnNumber))
         } else checkWin(black, white)
-
     }
 
     private fun tryWin(attempt: Array<Array<Int>>?) {
-        if(attempt != null) {
-            var children = context.children
-            var i = -1
+        attempt?.let {
+            val children = context.children
             this.tryWin = true
-            children.forEach { i++; it.tell(Check(typedSelf, attempt[i]), self) }
-        }else {
+            children.forEachIndexed { i, c -> c.tell(Check(typedSelf, attempt[i]), self) }
+        } ?: let {
             turn()
             tryWin = false
         }
     }
 
-    private fun turn(){
-        var selectPlayerTurn: Int
-        if (this.index == this.turnArray.size-1) {
-            this.turnArray.sortedArray()
+    private fun turn() {
+        if (index == this.turnArray.size) {
+            println("turn $turnNumber")
+            turnNumber++
+            turnArray = turnArray.sortedBy { Random.nextInt(playerNumber) }.toTypedArray()
             this.index = 0
         }
-        selectPlayerTurn = this.turnArray.get(this.index)
-        this.index++
-        this.idPlayer = "Player" + selectPlayerTurn
-        val playerTurn = context.actorSelection(this.idPlayer)
+        waitingWin = false
+        val selectPlayerTurn: Int = this.turnArray[this.index++]
+        this.idPlayer = "Player$selectPlayerTurn"
 
-        val timeout = Timeout.create(Duration.ofSeconds(5))
+        context.actorSelection(idPlayer).tell(ExecTurn(typedSelf, turnNumber), self)
+        self.tell(CheckTimeout(idPlayer, turnNumber, System.currentTimeMillis()), self)
+        /*
+        val playerTurn = context.actorSelection(this.idPlayer)
+        ...
+        val timeout = Timeout.create(java.time.Duration.ofSeconds(5))
         val future = Patterns.ask(playerTurn, ExecTurn(typedSelf, turnNumber), timeout)
-         try {
-             Await.result(future, timeout.duration()).toString()
-         }catch ( e:Exception ){
-             lostTurn(this.idPlayer)
-         }
-        /*context.system.scheduler.scheduleOnce(Duration.ofMillis(10)!!, {
+
+        try { // TODO
+            Timer.schedule(
+                delay: Long,
+                crossinline action: TimerTask.() -> Unit
+            ): TimerTask (source)
+            Await.result(future, Duration.fromNanos(5*10.0.pow(9))).toString()
+        }catch ( e:Exception ){
+            lostTurn(this.idPlayer)
+        }
+        context.system.scheduler.scheduleOnce(Duration.ofMillis(10)!!, {
             TODO()
         }, context.system.dispatcher)*/
-
-        this.effectivePlayerTurn++
-        if ( this.effectivePlayerTurn == this.playerNumber)  turnNumber++
     }
 
     private fun consolePrint(correctPlace: Int, wrongPlace:Int){
-        System.out.println("The "+ this.idPlayer + " guessed " + correctPlace + " digits in rights place and " + wrongPlace + " digits in a wrong place." )
+        println("The $idPlayer guessed $correctPlace digits in rights place and $wrongPlace digits in a wrong place." )
     }
 
     private fun checkWin(correctPlace: Int, wrongPlace: Int) {
@@ -130,7 +144,7 @@ class ArbiterActor: AbstractActor() {
             this.tryWin = false
             if (this.checkSecretNumber == this.numberOfCheck) {
                 context.children.forEach { it.tell(End(typedSelf, this.idPlayer), self) }
-            }else {
+            } else {
                 context.children.forEach { it.tell(Ban(typedSelf, this.idPlayer), self) }
                 turn()
             }
@@ -138,9 +152,10 @@ class ArbiterActor: AbstractActor() {
     }
 
     private fun lostTurn(idPlayer : String) {
-        System.out.println("The "+ idPlayer + "lost turn")
+        println("The $idPlayer lost turn")
         context.actorSelection(idPlayer).tell(LostTurn(typedSelf, "Lost Turn"),self)
         turn()
     }
 
+    private data class CheckTimeout(val idPlayer: String, val turn: Int, val time: Long)
 }

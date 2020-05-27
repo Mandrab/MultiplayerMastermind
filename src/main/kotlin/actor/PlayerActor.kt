@@ -40,15 +40,20 @@ class PlayerActor private constructor(
     } }.build()
 
     private val execTurn: (ExecTurn) -> Behavior<Message> = { exec -> also {
+        println("execturn")
+        println(gameState.filterIndexed { i, _ -> idx != i }.any { it.ready })
         lastAttemptPlayer = gameState.filterIndexed { i, _ -> idx != i }.firstOrNull { it.ready }?.also {
-            val attempt = Guess(context.self, exec.turn, it.makeAttempt().code.toTypedArray(), playerID)
+            val attempt = Guess(context.self, exec.turn, it.makeAttempt().code.toTypedArray(), playerID, "Player${gameState.indexOf(it)}")
+            waitingCheck = true
             exec.sender.tell(attempt)
+            println("send attempt")
         }
     } }
 
     private val check: (Check) -> Behavior<Message> = { check -> also {
+        println("check")
         val result = secret.guess(Code(check.attempt))
-        val checkResult = CheckResult(context.self, result.black, result.white, "Player${gameState.indexOf(lastAttemptPlayer)}")
+        val checkResult = CheckResult(context.self, result.black, result.white, check.sender.path().name())// TODO check mainreceiver
 
         Services.broadcastList(Services.Service.OBSERVE_RESULT.key, context, checkResult)
         check.sender.tell(checkResult)
@@ -58,7 +63,6 @@ class PlayerActor private constructor(
         if (waitingCheck) lastAttemptPlayer?.let {
             // TODO update result
             it.attemptResult(Result(result.black, result.white))
-            it.tickSearch(30)
             context.self.tell(Update())
         }
     } }
@@ -75,7 +79,10 @@ class PlayerActor private constructor(
     } }
 
     private val update: (Update) -> Behavior<Message> = { also {
-        gameState.firstOrNull { !it.ready }?.tickSearch(30)
+        gameState.firstOrNull { !it.ready }?.let {
+            it.tickSearch(30)
+            context.self.tell(Update())
+        }
     } }
 
     companion object {
