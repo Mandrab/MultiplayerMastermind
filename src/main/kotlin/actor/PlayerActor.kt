@@ -26,7 +26,7 @@ class PlayerActor private constructor(
     } }.build()
 
     override fun createReceive(): Receive<Message> = newReceiveBuilder()
-            .onMessage(Ban::class.java) { Behaviors.stopped() }
+            .onMessage(Ban::class.java, ban)
             .onMessage(Stop::class.java) { Behaviors.stopped() }
             .onMessage(End::class.java) { Behaviors.stopped() }
             .onMessage(ExecTurn::class.java, execTurn)
@@ -85,6 +85,15 @@ class PlayerActor private constructor(
             context.self.tell(Update())
         }
     } }
+
+    private val ban: (Ban) -> Behavior<Message> = {
+        if (it.playerID == playerID) {
+            Behaviors.stopped()
+        } else {
+            playersStates.remove(it.playerID)
+            this@PlayerActor
+        }
+    }
 
     companion object {
         fun create(ID: String): Behavior<Message> = Behaviors.setup {

@@ -111,7 +111,9 @@ class ArbiterActor: AbstractActor() {
                 players.values.forEach { it.tell(Ban(typedSelf, turnPlayerID)) }
                 players.remove(turnPlayerID)
                 println("$turnPlayerID has lost the game")
-                turn()
+
+                if (playersCount == 0) println("No one won the game")
+                else turn()
             }
         }
     }
