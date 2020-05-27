@@ -1,12 +1,14 @@
 package algorithm
 
+import kotlin.math.pow
+
 /**
  * This class implements an algorithm that focus on speed and memory usage instead of use the minimum number of moves.
  *
  * @author Paolo Baldini
  */
 class AttackerStrategy : Challenger {
-    private val previousResults = mutableListOf<Pair<Code, Result>>()
+    private val previousResults = mutableSetOf<Pair<Code, Result>>()
     private val iterator = Code.codes()
     private var attempt: Code = Code()
 
@@ -16,33 +18,30 @@ class AttackerStrategy : Challenger {
     var ready = true
         private set
 
-    override fun makeAttempt(): Code = attempt.also { ready = false }
+    override fun makeAttempt(): Code = attempt.also { ready = false || found }
 
-    override fun attemptResult(response: Result) {
+    override fun attemptResult(response: Result) = previousResults.add(Pair(attempt, response)).run {
         found = response.isCorrect()
+        ready = ready || found
+    }
+
+    fun update() {
         if (found) return
 
-        previousResults.add(Pair(attempt, response))
-
-        check(iterator.hasNext())
-
-        attempt = iterator.next()
+        do attempt = iterator.next()
         while (previousResults.any { it.first.guess(attempt) != it.second } && iterator.hasNext())
-            attempt = iterator.next()
 
         ready = true
     }
 
-    fun tickSearch(iterations: Int = 1) {
+    fun tickUpdate(iterations: Int = 10, multiplier: Int = 5) {
         if (found) return
-        check(iterator.hasNext())
 
-        var i = iterations
+        var i = iterations.toDouble().pow(multiplier).toInt()
 
-        attempt = iterator.next()
+        do attempt = iterator.next()
         while (i-- > 0 && previousResults.any { it.first.guess(attempt) != it.second } && iterator.hasNext())
-            attempt = iterator.next()
 
-        ready = previousResults.any { it.first.guess(attempt) != it.second }
+        ready = previousResults.all { it.first.guess(attempt) == it.second }
     }
 }

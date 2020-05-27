@@ -38,10 +38,17 @@ class PlayerActor private constructor(
     } }.build()
 
     private val execTurn: (ExecTurn) -> Behavior<Message> = { exec -> also {
-        attacked = playersStates.filterNot { it.key == playerID }.entries.firstOrNull { it.value.ready }?.also {
-            val attempt = Guess(context.self, exec.turn, it.value.makeAttempt().code.toTypedArray(), playerID, it.key)
-            exec.sender.tell(attempt)
-        }?.value
+        if (playersStates.filterNot { it.key == playerID }.all { it.value.found }) {
+            exec.sender.tell(Try(context.self, exec.turn, playersStates.map {
+                if (it.key == playerID) secret.code.toTypedArray()
+                else it.value.makeAttempt().code.toTypedArray() }.toTypedArray()))
+        } else {
+            attacked = playersStates.filterNot { it.key == playerID || it.value.found }.entries
+                    .firstOrNull { it.value.ready }?.also {
+                val attempt = Guess(context.self, exec.turn, it.value.makeAttempt().code.toTypedArray(), playerID, it.key)
+                exec.sender.tell(attempt)
+            }?.value
+        }
     } }
 
     private val check: (Check) -> Behavior<Message> = { check -> also {
@@ -74,7 +81,7 @@ class PlayerActor private constructor(
 
     private val update: (Update) -> Behavior<Message> = { also {
         playersStates.values.firstOrNull { !it.ready }?.let {
-            it.tickSearch(30)
+            it.tickUpdate()
             context.self.tell(Update())
         }
     } }
