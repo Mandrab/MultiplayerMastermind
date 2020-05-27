@@ -1,10 +1,12 @@
 package actor
 
 import akka.actor.AbstractActor
+import akka.actor.ReceiveTimeout
 import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.Adapter
 import akka.actor.typed.receptionist.Receptionist
 import message.*
+import java.time.Duration
 import kotlin.random.Random
 
 class ArbiterActor: AbstractActor() {
@@ -28,16 +30,32 @@ class ArbiterActor: AbstractActor() {
 
     private var waitingWin = false
 
+    private lateinit var lastGuess: Guess
+
     override fun preStart() = super.preStart().also { Adapter.toTyped(context.system).receptionist().tell(Receptionist
                 .register(Services.Service.START_GAME.key, Adapter.toTyped(self))) }
 
-    override fun createReceive(): Receive = receiveBuilder()
-                .match(StartGame::class.java, start)
-                .match(Guess::class.java) { msg -> guess(msg) }
-                .match(CheckResult::class.java) { msg -> checkResult(attempterPlayer, msg.black, msg.white) }
-                .match(Try::class.java) { msg -> tryWin(msg.attempt) }
-                .match(CheckTimeout::class.java) { timeout(it) }
-                .build()
+    override fun createReceive(): Receive = receiveBuilder().match(StartGame::class.java, start).build()
+
+    private fun receiveGuess(): Receive = receiveBuilder()
+            .match(Guess::class.java) { msg -> guess(msg) }
+            .match(ReceiveTimeout::class.java) {
+                println("The $turnPlayerID lost turn")
+                turn()
+            }.build()
+
+    private fun receiveCheckResult(): Receive = receiveBuilder()
+            .match(CheckResult::class.java) { msg -> checkResult(attempterPlayer, msg.black, msg.white) }
+            .match(ReceiveTimeout::class.java) {
+                context.actorSelection(lastGuess.defenderID).tell(Check(typedSelf, lastGuess.attempt), self)
+            }.build()
+
+    private fun receiveTry(): Receive = receiveBuilder()
+            .match(Try::class.java) { msg -> tryWin(msg.attempt) }
+            .match(ReceiveTimeout::class.java) {
+                println("The $turnPlayerID lost turn")
+                turn()
+            }.build()
 
     private val start: (StartGame) -> Unit = { msg ->
         secretValueLength = msg.secretLength
@@ -48,22 +66,25 @@ class ArbiterActor: AbstractActor() {
         msg.sender.tell(GamePlayers(typedSelf, players.values.toList()))
         playerTurn = players.keys.sortedBy { Random.nextInt(playersCount) }.iterator()
 
+        context.receiveTimeout = Duration.ofSeconds(5)
         turn()
     }
 
-    private val timeout: (CheckTimeout) -> Unit = {
-        Thread.sleep(5) //TODO remove
+    /*private val timeout: (CheckTimeout) -> Unit = {
+        //Thread.sleep(5) //TODO remove
         if (it.idPlayer == turnPlayerID && it.turn == turnNumber && !waitingWin) {
             if (System.currentTimeMillis() - it.time > 5000) {
                 println("The $turnPlayerID lost turn")
                 context.actorSelection(turnPlayerID).tell(LostTurn(typedSelf, "Lost Turn"), self)
-                turn()
             } else self.tell(it, self)
         }
-    }
+    }*/
 
     private fun guess(msg: Guess) {
+        println("guess")
         if (msg.attackerID == turnPlayerID) {
+            lastGuess = msg
+            context.become(receiveCheckResult())
             context.actorSelection(msg.defenderID).tell(Check(typedSelf, msg.attempt), self)
             attempterPlayer = msg.sender
         }
@@ -73,15 +94,19 @@ class ArbiterActor: AbstractActor() {
         if (!tryWin) {
             waitingWin = true
             println("$turnPlayerID got $black black and $white white.")
+            context.become(receiveTry())
             attempterPlayer.tell(WannaTry(typedSelf, turnNumber))
         } else checkWin(black)
     }
 
-    private fun tryWin(attempt: Array<Array<Int>>?) = attempt?.run {
-        val children = context.children
-        tryWin = true
-        children.forEachIndexed { i, c -> c.tell(Check(typedSelf, attempt[i]), self) }
-    } ?: turn()
+    private fun tryWin(attempt: Array<Array<Int>>?) {
+        attempt?.run {
+            val children = context.children
+            tryWin = true
+            context.become(receiveCheckResult())
+            children.forEachIndexed { i, c -> c.tell(Check(typedSelf, attempt[i]), self) }
+        } ?: turn()
+    }
 
     private fun turn() {
         if (!playerTurn.hasNext()) {
@@ -92,8 +117,10 @@ class ArbiterActor: AbstractActor() {
         waitingWin = false
         turnPlayerID = playerTurn.next()
 
-        context.actorSelection(turnPlayerID).tell(ExecTurn(typedSelf, turnNumber), self)
-        self.tell(CheckTimeout(turnPlayerID, turnNumber, System.currentTimeMillis()), self)
+        context.become(receiveGuess())
+        players[turnPlayerID]?.tell(ExecTurn(typedSelf, turnNumber))
+        //context.actorSelection(turnPlayerID).tell(ExecTurn(typedSelf, turnNumber), self)
+        //self.tell(CheckTimeout(turnPlayerID, turnNumber, System.currentTimeMillis()), self)
         /*
         val playerTurn = context.actorSelection(this.idPlayer)
         ...
