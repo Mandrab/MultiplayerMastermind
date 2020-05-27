@@ -17,8 +17,13 @@ class PlayerActor private constructor(
     private lateinit var playersStates: MutableMap<String, AttackerStrategy>
     private var attacked: AttackerStrategy? = null
 
-    override val secret = Code()
+    override val secret by lazy { Code() }
     override fun verify(guess: Code) = secret.guess(guess)
+
+    fun idle(): Behavior<Message> = Behaviors.receive(Message::class.java).onMessage(StartGame::class.java) { apply {
+        Code.secretLength = it.secretLength
+        playersStates = (0 until it.playerCount).map { Pair("Player$it", AttackerStrategy()) }.toMap().toMutableMap()
+    } }.build()
 
     override fun createReceive(): Receive<Message> = newReceiveBuilder()
             .onMessage(Ban::class.java) { Behaviors.stopped() }
@@ -31,11 +36,6 @@ class PlayerActor private constructor(
             .onMessage(WannaTry::class.java, wannaTry)
             .onMessage(Update::class.java, update)
             .build()
-
-    fun idle(): Behavior<Message> = Behaviors.receive(Message::class.java).onMessage(StartGame::class.java) { apply {
-        Code.secretLength = it.secretLength
-        playersStates = (0 until it.playerCount).map { Pair("Player$it", AttackerStrategy()) }.toMap().toMutableMap()
-    } }.build()
 
     private val execTurn: (ExecTurn) -> Behavior<Message> = { exec -> also {
         if (playersStates.filterNot { it.key == playerID }.all { it.value.found }) {

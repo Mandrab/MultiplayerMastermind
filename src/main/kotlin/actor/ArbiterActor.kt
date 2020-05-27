@@ -62,6 +62,8 @@ class ArbiterActor: AbstractActor() {
         playerTurn = players.keys.sortedBy { Random.nextInt(playersCount) }.iterator()
 
         context.receiveTimeout = Duration.ofSeconds(3)
+
+        println("\n============Turn ${turnNumber++}============")
         turn()
     }
 
@@ -69,7 +71,7 @@ class ArbiterActor: AbstractActor() {
         if (it.attackerID == turnPlayerID) {
             lastGuess = it
             context.become(receiveCheckGuess())
-            context.actorSelection(it.defenderID).tell(Check(typedSelf, it.attempt), self)
+            players[it.defenderID]?.tell(Check(typedSelf, it.attempt))
             attempterPlayer = it.sender
         }
     }
@@ -86,7 +88,7 @@ class ArbiterActor: AbstractActor() {
 
     private fun turn() {
         if (!playerTurn.hasNext()) {
-            println("turn ${turnNumber++}")
+            println("\n============Turn ${turnNumber++}============")
             playerTurn = players.keys.sortedBy { Random.nextInt(playersCount) }.iterator()
         }
         turnPlayerID = playerTurn.next()

@@ -1,6 +1,5 @@
 package algorithm
 
-import kotlin.math.pow
 import kotlin.random.Random
 
 /**
@@ -27,9 +26,7 @@ class Code(code: Array<Int> = Array(secretLength) { Random.nextInt(alphabetChars
 
     companion object {
         var alphabetChars = 10
-            set(value) { field = value; update() }
         var secretLength = 4
-            set(value) { field = value; update() }
 
         fun codes(): Iterator<Code> = object : Iterator<Code> {
             private var nextCode = Code(Array(secretLength) { 0 })
@@ -37,14 +34,6 @@ class Code(code: Array<Int> = Array(secretLength) { Random.nextInt(alphabetChars
             override fun hasNext() = nextCode != Code(Array(secretLength) { alphabetChars -1 })
 
             override fun next(): Code = nextCode.also { nextCode = next(nextCode) }
-        }
-
-        private var solutionsCount: Int = alphabetChars.toDouble().pow(secretLength).toInt()
-
-        private fun update() {
-            solutionsCount = alphabetChars.toDouble().pow(secretLength).toInt()
-
-            var previousCode = Code(Array(secretLength) { 0 })
         }
 
         private fun next(code: Code): Code {
