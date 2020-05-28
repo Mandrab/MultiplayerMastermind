@@ -84,10 +84,10 @@ class ArbiterActor: AbstractActor() {
     }
 
     private val tryWin: (Try) -> Unit = {
-        it.attempt?.forEachIndexed { idx, code ->
+        if (it.attempt?.size == playersCount) it.attempt.forEachIndexed { idx, code ->
             val player = players.entries.elementAt(idx)
             player.value.tell(Check(typedSelf, code, self.path().name(), player.key))
-        } ?: turn()
+        } else turn()
     }
 
     private fun turn() {
