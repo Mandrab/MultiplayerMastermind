@@ -61,4 +61,16 @@ class ViewImpl : JFrame(), View {
     override fun newResult(attacker: String, defender: String, black: Int, white: Int) {
         visualization.newResult(attacker, defender, black, white)
     }
+
+    override fun newBan(attacker: String){
+        visualization.newBan(attacker)
+    }
+
+    override fun newLost(attacker: String, turn: Int, value: String){
+        visualization.newLostTurn(attacker, turn, value)
+    }
+
+    override fun newWin(value:String){
+        visualization.newWin(value)
+    }
 }

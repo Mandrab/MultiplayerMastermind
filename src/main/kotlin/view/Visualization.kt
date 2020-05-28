@@ -1,7 +1,11 @@
 package view
 
+import message.StartGame
+import message.Stop
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.awt.event.ActionEvent
+import java.awt.event.ActionListener
 import javax.swing.*
 
 class Visualization : JFrame() {
@@ -21,6 +25,16 @@ class Visualization : JFrame() {
             players[playersID.selectedValue]?.isVisible = true
         }
         add(JScrollPane(playersID), gbc)
+
+        gbc.gridy = 3
+        add(JButton("End Game").apply { addActionListener(object : ActionListener {
+            override fun actionPerformed(e: ActionEvent) {
+                //TODO: mandare msg arbitro.
+                isEnabled = false
+                dispose()
+            }
+        }) }, gbc)
+
 
         defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
         isResizable = false
@@ -52,7 +66,6 @@ class Visualization : JFrame() {
     fun newPlayer(ID: String) {
         players[ID] = Dialog(this, ID)
         playersID.setListData(players.keys.toTypedArray())
-
     }
 
     fun newResult(attacker: String, defender: String, black: Int, white: Int) {
@@ -61,5 +74,26 @@ class Visualization : JFrame() {
             it.attemptsList.setListData(it.attempts.toTypedArray())
             it.pack()
         }
+    }
+
+    fun newBan(attacker: String) {
+        players[attacker]?.let {
+            it.attempts.add("Banned!!! ")
+            it.attemptsList.setListData(it.attempts.toTypedArray())
+            it.pack()
+        }
+    }
+
+    fun newLostTurn(attacker: String, turn: Int, value: String){
+        players[attacker]?.let {
+            it.attempts.add("$value $turn.")
+            it.attemptsList.setListData(it.attempts.toTypedArray())
+            it.pack()
+        }
+    }
+
+    fun newWin(value:String){
+        JOptionPane.showMessageDialog(this, value,
+                "End Game", JOptionPane.INFORMATION_MESSAGE)
     }
 }

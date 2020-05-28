@@ -10,4 +10,10 @@ interface View {
     fun newPlayer(ID: String)
 
     fun newResult(attacker: String, defender: String, black: Int, white: Int)
+
+    fun newBan(attacker: String)
+
+    fun newLost(attacker: String, turn:Int, value:String)
+
+    fun newWin(value:String)
 }

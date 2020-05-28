@@ -28,32 +28,40 @@ class ArbiterActor: AbstractActor() {
 
     private lateinit var lastGuess: Guess
 
+    private lateinit var viewActor:ActorRef<Message>
+
     override fun preStart() = super.preStart().also { Adapter.toTyped(context.system).receptionist().tell(Receptionist
                 .register(Services.Service.START_GAME.key, Adapter.toTyped(self))) }
 
-    override fun createReceive(): Receive = receiveBuilder().match(StartGame::class.java, start).build()
+    override fun createReceive(): Receive = receiveBuilder()
+            .match(StartGame::class.java, start)
+            .match(Stop::class.java){ endGame() }
+            .build()
 
     private fun receiveGuess(): Receive = receiveBuilder()
             .match(Guess::class.java, guess)
             .match(Try::class.java) { context.become(receiveTryWin()); tryWin(it) }
-            .match(ReceiveTimeout::class.java) { println("The $turnPlayerID lost turn"); turn() }
+            .match(ReceiveTimeout::class.java) { viewActor.tell(LostTurn(typedSelf,"The $turnPlayerID lost turn", this.turnPlayerID, this.turnNumber)); println("The $turnPlayerID lost turn"); turn() }
+            .match(Stop::class.java){ endGame() }
             .build()
 
     private fun receiveCheckGuess(): Receive = receiveBuilder()
             .match(CheckResult::class.java, guessResult)
             .match(ReceiveTimeout::class.java) { players[lastGuess.defenderID]
                     ?.tell(Check(typedSelf, lastGuess.attempt, lastGuess.attackerID, lastGuess.defenderID)) }
+            .match(Stop::class.java){ endGame() }
             .build()
 
     private fun receiveTryWin(): Receive = receiveBuilder()
             .match(Try::class.java, tryWin)
             .match(CheckResult::class.java, checkWin)
-            .match(ReceiveTimeout::class.java) { println("The $turnPlayerID lost turn"); turn() }
+            .match(Stop::class.java){ endGame() }
+            .match(ReceiveTimeout::class.java) { viewActor.tell(LostTurn(typedSelf,"The $turnPlayerID lost turn", this.turnPlayerID, this.turnNumber)); println("The $turnPlayerID lost turn"); turn() }
             .build()
 
-    private fun gameEnd(): Receive = receiveBuilder().match(End::class.java) { TODO() }.build()
 
     private val start: (StartGame) -> Unit = { msg ->
+        viewActor = msg.sender
         secretValueLength = msg.secretLength
         players.putAll((0 until msg.playerCount).map { Pair("Player$it", Adapter.spawn(context,
                 PlayerActor.create("Player$it"), "Player$it")) })
@@ -106,19 +114,31 @@ class ArbiterActor: AbstractActor() {
         if (++numberOfCheck == playersCount) { // rappresenta il numero di tentativi di vincita sottomessi
             if (correctDigits == playersCount * secretValueLength) {
                 players.values.forEach { it.tell(End(typedSelf, turnPlayerID)) }
+                viewActor.tell(End(typedSelf, turnPlayerID))
                 println("Game ended. The winner is: $turnPlayerID")
-                context.become(gameEnd())
+                endGame()
             } else {
                 numberOfCheck = 0
                 correctDigits = 0
 
                 players.values.forEach { it.tell(Ban(typedSelf, turnPlayerID)) }
                 players.remove(turnPlayerID)
+                viewActor.tell(Ban(typedSelf, turnPlayerID))
                 println("$turnPlayerID has lost the game")
 
-                if (playersCount == 0) println("No one won the game")
+                if (playersCount == 0){
+                    viewActor.tell(End(typedSelf , ""))
+                    println("No one won the game")
+                    endGame()
+                }
                 else turn()
             }
         }
+    }
+
+    private fun endGame(){
+        players.values.forEach { it.tell(Stop(typedSelf)) }
+        context.children.forEach{ context.stop(it) } // così uccide i figli
+        context.stop(context.self) //così si auto uccide
     }
 }
