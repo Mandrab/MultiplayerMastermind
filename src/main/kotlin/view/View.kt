@@ -16,4 +16,20 @@ interface View {
     fun newLost(attacker: String, turn:Int, value:String)
 
     fun newWin(value:String)
+
+    fun humanStartGame()
+
+    fun humanTurn(turn: Int)
+
+    fun lostHumanTurn(turn: Int)
+
+    fun humanWannaTry()
+
+    fun humanBanned()
+
+    fun humanBlackWhite(black: Int, white:Int)
+
+    fun humanCheck(attempt: Array<Int>, sender: ActorRef<Message>, defender: String) {
+
+    }
 }

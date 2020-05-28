@@ -42,7 +42,8 @@ class ViewImpl : JFrame(), View {
         gbc.gridy = 3
         add(JButton("Start").apply { addActionListener {
             visualization.actor = actor
-            actor.tell(StartGame(actor, playerN.text.toInt(), secretLength.text.toInt(), emptyList()))
+            visualization.secretLenght = secretLength.text.toInt()
+            actor.tell(StartGame(actor, playerN.text.toInt(), secretLength.text.toInt(), humanPlayer.isSelected ,emptyList()))
             isVisible = false
             dispose()
         } }, gbc)
@@ -70,4 +71,33 @@ class ViewImpl : JFrame(), View {
     override fun newWin(value:String){
         visualization.newWin(value)
     }
+
+    override fun humanTurn(turn: Int){
+        visualization.humanTurn(turn)
+    }
+
+    override fun lostHumanTurn(turn: Int){
+        visualization.lostHumanTurn(turn)
+    }
+
+    override fun humanWannaTry(){
+        visualization.humanWannaTry()
+    }
+
+    override fun humanBanned(){
+        visualization.humanBanned()
+    }
+
+    override fun humanBlackWhite(black: Int, white:Int){
+        visualization.humanBlackWhite(black, white)
+    }
+
+    override fun humanCheck(attempt: Array<Int>, sender: ActorRef<Message>, defender:String) {
+        visualization.humanCheck(attempt, sender, defender)
+    }
+
+    override fun humanStartGame(){
+        visualization.humanStartGame()
+    }
+
 }
