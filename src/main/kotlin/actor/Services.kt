@@ -13,6 +13,7 @@ typealias TypedActorRef<T> = akka.actor.typed.ActorRef<T>
 object Services {
     enum class Service(val key: ServiceKey<Message>) {
         START_GAME(ServiceKey.create(Message::class.java, "startGame")),
+        STOP_GAME(ServiceKey.create(Message::class.java, "stopGame")),
         OBSERVE_RESULT(ServiceKey.create(Message::class.java, "attemptResult"))
     }
 

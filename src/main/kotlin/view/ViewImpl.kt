@@ -5,12 +5,10 @@ import message.Message
 import message.StartGame
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
-import java.awt.event.ActionEvent
-import java.awt.event.ActionListener
 import javax.swing.*
 
 class ViewImpl : JFrame(), View {
-    private val visualization: Visualization = Visualization()
+    private val visualization: Visualization by lazy { Visualization() }
     private val playerN = JTextField("6")
     private val secretLength = JTextField("4")
     private val humanPlayer = JCheckBox()
@@ -42,13 +40,12 @@ class ViewImpl : JFrame(), View {
         add(humanPlayer, gbc)
 
         gbc.gridy = 3
-        add(JButton("Start").apply { addActionListener(object : ActionListener {
-            override fun actionPerformed(e: ActionEvent) {
-                actor.tell(StartGame(actor, playerN.text.toInt(), secretLength.text.toInt(), emptyList()))
-                isVisible = false
-                dispose()
-            }
-        }) }, gbc)
+        add(JButton("Start").apply { addActionListener {
+            visualization.actor = actor
+            actor.tell(StartGame(actor, playerN.text.toInt(), secretLength.text.toInt(), emptyList()))
+            isVisible = false
+            dispose()
+        } }, gbc)
 
         defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
         isResizable = false

@@ -27,7 +27,7 @@ class PlayerActor private constructor(
 
     override fun createReceive(): Receive<Message> = newReceiveBuilder()
             .onMessage(Ban::class.java, ban)
-            .onMessage(Stop::class.java) { Behaviors.stopped() }
+            .onMessage(StopGame::class.java) { Behaviors.stopped() }
             .onMessage(End::class.java) { Behaviors.stopped() }
             .onMessage(ExecTurn::class.java, execTurn)
             .onMessage(Check::class.java, check)

@@ -30,32 +30,35 @@ class ArbiterActor: AbstractActor() {
 
     private lateinit var viewActor:ActorRef<Message>
 
-    override fun preStart() = super.preStart().also { Adapter.toTyped(context.system).receptionist().tell(Receptionist
-                .register(Services.Service.START_GAME.key, Adapter.toTyped(self))) }
+    override fun preStart() = super.preStart().also {
+        Adapter.toTyped(context.system).receptionist()
+                .tell(Receptionist.register(Services.Service.START_GAME.key, Adapter.toTyped(self)))
+        Adapter.toTyped(context.system).receptionist()
+                .tell(Receptionist.register(Services.Service.STOP_GAME.key, Adapter.toTyped(self))) }
 
     override fun createReceive(): Receive = receiveBuilder()
             .match(StartGame::class.java, start)
-            .match(Stop::class.java){ endGame() }
+            .match(StopGame::class.java, endGame)
             .build()
 
     private fun receiveGuess(): Receive = receiveBuilder()
             .match(Guess::class.java, guess)
             .match(Try::class.java) { context.become(receiveTryWin()); tryWin(it) }
             .match(ReceiveTimeout::class.java) { viewActor.tell(LostTurn(typedSelf,"The $turnPlayerID lost turn", this.turnPlayerID, this.turnNumber)); println("The $turnPlayerID lost turn"); turn() }
-            .match(Stop::class.java){ endGame() }
+            .match(StopGame::class.java, endGame)
             .build()
 
     private fun receiveCheckGuess(): Receive = receiveBuilder()
             .match(CheckResult::class.java, guessResult)
             .match(ReceiveTimeout::class.java) { players[lastGuess.defenderID]
                     ?.tell(Check(typedSelf, lastGuess.attempt, lastGuess.attackerID, lastGuess.defenderID)) }
-            .match(Stop::class.java){ endGame() }
+            .match(StopGame::class.java, endGame)
             .build()
 
     private fun receiveTryWin(): Receive = receiveBuilder()
             .match(Try::class.java, tryWin)
             .match(CheckResult::class.java, checkWin)
-            .match(Stop::class.java){ endGame() }
+            .match(StopGame::class.java, endGame)
             .match(ReceiveTimeout::class.java) { viewActor.tell(LostTurn(typedSelf,"The $turnPlayerID lost turn", this.turnPlayerID, this.turnNumber)); println("The $turnPlayerID lost turn"); turn() }
             .build()
 
@@ -116,7 +119,7 @@ class ArbiterActor: AbstractActor() {
                 players.values.forEach { it.tell(End(typedSelf, turnPlayerID)) }
                 viewActor.tell(End(typedSelf, turnPlayerID))
                 println("Game ended. The winner is: $turnPlayerID")
-                endGame()
+                endGame(null)
             } else {
                 numberOfCheck = 0
                 correctDigits = 0
@@ -129,16 +132,16 @@ class ArbiterActor: AbstractActor() {
                 if (playersCount == 0){
                     viewActor.tell(End(typedSelf , ""))
                     println("No one won the game")
-                    endGame()
+                    endGame(null)
                 }
                 else turn()
             }
         }
     }
 
-    private fun endGame(){
-        players.values.forEach { it.tell(Stop(typedSelf)) }
-        context.children.forEach{ context.stop(it) } // così uccide i figli
+    private val endGame: (StopGame?) -> Unit = {
+        players.values.forEach { it.tell(StopGame(typedSelf)) }
+        context.children.forEach{ context.stop(it) } // così uccide i figli TODO serve sia la tell Stop che questa o ne basta una?
         context.stop(context.self) //così si auto uccide
     }
 }

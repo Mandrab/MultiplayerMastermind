@@ -32,6 +32,8 @@ class ViewActor(context: ActorContext<Message>, private val view: View) : Abstra
             .onMessage(CheckResult::class.java) { apply {
                 view.newResult(Adapter.toClassic(it.sender).path().name(), it.attackerID, it.black, it.white)
             }}
+            .onMessage(StopGame::class.java) { apply { Services.unicast(Services.Service.STOP_GAME.key, context, it) } }
+            .onMessage(Services.Unicast::class.java) { res -> apply { res.msg?.let { res.actor.tell(res.msg) } } }
             .build()
 
     companion object {

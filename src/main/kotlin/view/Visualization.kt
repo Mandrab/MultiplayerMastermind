@@ -1,16 +1,17 @@
 package view
 
-import message.StartGame
-import message.Stop
+import akka.actor.typed.ActorRef
+import message.Message
+import message.StopGame
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
-import java.awt.event.ActionEvent
-import java.awt.event.ActionListener
 import javax.swing.*
 
 class Visualization : JFrame() {
     private val players = mutableMapOf<String, Dialog>()
     private val playersID = JList(emptyArray<String>())
+
+    lateinit var actor: ActorRef<Message>
 
     init {
         layout = GridBagLayout()
@@ -27,14 +28,12 @@ class Visualization : JFrame() {
         add(JScrollPane(playersID), gbc)
 
         gbc.gridy = 3
-        add(JButton("End Game").apply { addActionListener(object : ActionListener {
-            override fun actionPerformed(e: ActionEvent) {
-                //TODO: mandare msg arbitro.
-                isEnabled = false
-                dispose()
+        add(JButton("End Game").apply {
+            addActionListener {
+                actor.tell(StopGame(actor))
+                this.isEnabled = false
             }
-        }) }, gbc)
-
+        }, gbc)
 
         defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
         isResizable = false
