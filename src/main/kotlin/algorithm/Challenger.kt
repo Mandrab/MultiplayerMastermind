@@ -11,3 +11,10 @@ interface Challenger {
 
     fun attemptResult(response: Result)
 }
+
+interface FaultChallenger {
+
+    fun makeAttempt(): Code
+
+    fun attemptResult(attempt: Code, response: Result)
+}

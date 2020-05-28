@@ -6,4 +6,5 @@ data class CheckResult(
         override val sender: ActorRef<Message>,
         val black: Int,             // correctPlace
         val white: Int,             // wrongPlace
-        val mainReceiver: String): Message
+        val attackerID: String,
+        val defenderID: String): Message

@@ -35,17 +35,18 @@ class ArbiterActor: AbstractActor() {
 
     private fun receiveGuess(): Receive = receiveBuilder()
             .match(Guess::class.java, guess)
-            .match(Try::class.java) { context.become(receiveTryWin()); tryWin(it.attempt) }
+            .match(Try::class.java) { context.become(receiveTryWin()); tryWin(it) }
             .match(ReceiveTimeout::class.java) { println("The $turnPlayerID lost turn"); turn() }
             .build()
 
     private fun receiveCheckGuess(): Receive = receiveBuilder()
             .match(CheckResult::class.java, guessResult)
-            .match(ReceiveTimeout::class.java) { players[lastGuess.defenderID]?.tell(Check(typedSelf, lastGuess.attempt)) }
+            .match(ReceiveTimeout::class.java) { players[lastGuess.defenderID]
+                    ?.tell(Check(typedSelf, lastGuess.attempt, lastGuess.attackerID, lastGuess.defenderID)) }
             .build()
 
     private fun receiveTryWin(): Receive = receiveBuilder()
-            .match(Try::class.java) { tryWin(it.attempt) }
+            .match(Try::class.java, tryWin)
             .match(CheckResult::class.java, checkWin)
             .match(ReceiveTimeout::class.java) { println("The $turnPlayerID lost turn"); turn() }
             .build()
@@ -71,7 +72,7 @@ class ArbiterActor: AbstractActor() {
         if (it.attackerID == turnPlayerID) {
             lastGuess = it
             context.become(receiveCheckGuess())
-            players[it.defenderID]?.tell(Check(typedSelf, it.attempt))
+            players[it.defenderID]?.tell(Check(typedSelf, it.attempt, it.attackerID, it.defenderID))
             attempterPlayer = it.sender
         }
     }
@@ -82,8 +83,11 @@ class ArbiterActor: AbstractActor() {
         attempterPlayer.tell(WannaTry(typedSelf, turnNumber))
     }
 
-    private fun tryWin(attempt: Array<Array<Int>>?) {
-        attempt?.forEachIndexed { idx, code -> players.values.elementAt(idx).tell(Check(typedSelf, code))} ?: turn()
+    private val tryWin: (Try) -> Unit = {
+        it.attempt?.forEachIndexed { idx, code ->
+            val player = players.entries.elementAt(idx)
+            player.value.tell(Check(typedSelf, code, self.path().name(), player.key))
+        } ?: turn()
     }
 
     private fun turn() {

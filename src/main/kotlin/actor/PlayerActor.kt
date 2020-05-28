@@ -15,7 +15,7 @@ class PlayerActor private constructor(
         private val playerID: String
 ) : AbstractBehavior<Message>(context), CodeMaker {
     private lateinit var playersStates: MutableMap<String, AttackerStrategy>
-    private var attacked: AttackerStrategy? = null
+    private var lastAttack: Pair<String, Code>? = null
 
     override val secret by lazy { Code() }
     override fun verify(guess: Code) = secret.guess(guess)
@@ -43,26 +43,26 @@ class PlayerActor private constructor(
                 if (it.key == playerID) secret.code.toTypedArray()
                 else it.value.makeAttempt().code.toTypedArray() }.toTypedArray()))
         } else {
-            attacked = playersStates.filterNot { it.key == playerID || it.value.found }.entries
-                    .firstOrNull { it.value.ready }?.also {
-                val attempt = Guess(context.self, exec.turn, it.value.makeAttempt().code.toTypedArray(), playerID, it.key)
-                exec.sender.tell(attempt)
-            }?.value
+            playersStates.filterNot { it.key == playerID || it.value.found }.entries.firstOrNull { it.value.ready }?.let {
+                val attempt = it.value.makeAttempt()
+                lastAttack = Pair(it.key, attempt)
+                exec.sender.tell(Guess(context.self, exec.turn, attempt.code.toTypedArray(), playerID, it.key))
+            }
         }
     } }
 
     private val check: (Check) -> Behavior<Message> = { check -> also {
         val result = secret.guess(Code(check.attempt))
-        val checkResult = CheckResult(context.self, result.black, result.white, check.sender.path().name()) // TODO check mainreceiver
+        val checkResult = CheckResult(context.self, result.black, result.white, check.attackerID, check.defenderID) // TODO check mainreceiver
 
         Services.broadcastList(Services.Service.OBSERVE_RESULT.key, context, checkResult)
         check.sender.tell(checkResult)
     } }
 
     private val checkResult: (CheckResult) -> Behavior<Message> = { result -> also {
-        attacked?.let {
-            attacked = null
-            it.attemptResult(Result(result.black, result.white))
+        if (result.attackerID == playerID) lastAttack?.let {
+            playersStates[it.first]?.attemptResult(it.second, Result(result.black, result.white))
+            lastAttack = null
             context.self.tell(Update())
         }
     } }

@@ -7,10 +7,10 @@ import kotlin.math.pow
  *
  * @author Paolo Baldini
  */
-class AttackerStrategy : Challenger {
+class AttackerStrategy : FaultChallenger {
     private val previousResults = mutableSetOf<Pair<Code, Result>>()
     private val iterator = Code.codes()
-    private var attempt: Code = Code()
+    private var nextAttempt: Code = Code()
 
     var found = false
         private set
@@ -18,9 +18,9 @@ class AttackerStrategy : Challenger {
     var ready = true
         private set
 
-    override fun makeAttempt(): Code = attempt.also { ready = false || found }
+    override fun makeAttempt(): Code = nextAttempt.also { ready = false || found }
 
-    override fun attemptResult(response: Result) = previousResults.add(Pair(attempt, response)).run {
+    override fun attemptResult(attempt: Code, response: Result) = previousResults.add(Pair(attempt, response)).run {
         found = response.isCorrect()
         ready = ready || found
     }
@@ -28,8 +28,8 @@ class AttackerStrategy : Challenger {
     fun update() {
         if (found) return
 
-        do attempt = iterator.next()
-        while (previousResults.any { it.first.guess(attempt) != it.second } && iterator.hasNext())
+        do nextAttempt = iterator.next()
+        while (previousResults.any { it.first.guess(nextAttempt) != it.second } && iterator.hasNext())
 
         ready = true
     }
@@ -39,9 +39,9 @@ class AttackerStrategy : Challenger {
 
         var i = iterations.toDouble().pow(multiplier).toInt()
 
-        do attempt = iterator.next()
-        while (i-- > 0 && previousResults.any { it.first.guess(attempt) != it.second } && iterator.hasNext())
+        do nextAttempt = iterator.next()
+        while (i-- > 0 && previousResults.any { it.first.guess(nextAttempt) != it.second } && iterator.hasNext())
 
-        ready = previousResults.all { it.first.guess(attempt) == it.second }
+        ready = previousResults.all { it.first.guess(nextAttempt) == it.second }
     }
 }

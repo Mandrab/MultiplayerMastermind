@@ -19,7 +19,7 @@ class ViewActor(context: ActorContext<Message>, private val view: View) : Abstra
                     .path().name()) } } }.build()
 
     override fun createReceive(): Receive<Message> = newReceiveBuilder().onMessage(CheckResult::class.java) { apply {
-        view.newResult(Adapter.toClassic(it.sender).path().name(), it.mainReceiver, it.black, it.white)
+        view.newResult(Adapter.toClassic(it.sender).path().name(), it.attackerID, it.black, it.white)
     } }.build()
 
     companion object {
