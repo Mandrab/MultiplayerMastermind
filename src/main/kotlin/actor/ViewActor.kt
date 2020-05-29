@@ -19,22 +19,23 @@ private lateinit var arbiterActor: ActorRef<Message>
                     .path().name()) } } }.build()
 
     override fun createReceive(): Receive<Message> = newReceiveBuilder()
-            .onMessage(StartGame::class.java){ apply {
-                view.humanStartGame()
-                arbiterActor = it.sender
-            }}
             .onMessage(ExecTurn::class.java){apply {
                 view.humanTurn(it.turn)
+                arbiterActor = it.sender
             }}
             .onMessage(Guess::class.java){apply {
                 arbiterActor.tell(it)
             }}
             .onMessage(Check::class.java){apply{
-                view.humanCheck(it.attempt, it.sender, it.defenderID)
+                view.humanCheck(it.attempt, it.attackerID, it.defenderID)
             }}
             .onMessage(CheckResult::class.java){apply{
-                arbiterActor.tell(it)
-                if(it.attackerID.equals("Player0")) view.humanBlackWhite(it.black, it.white)
+                if (it.defenderID == "Player0") {
+                    arbiterActor.tell(it)
+                }else {
+                    view.newResult(Adapter.toClassic(it.sender).path().name(), it.attackerID, it.black, it.white)
+                    if (it.attackerID == "Player0") view.humanBlackWhite(it.black, it.white)
+                }
             }}
             .onMessage(WannaTry::class.java){ apply {
                 view.humanWannaTry()
@@ -54,9 +55,6 @@ private lateinit var arbiterActor: ActorRef<Message>
                 } else {
                     view.newWin("Game ended. The winner is: "+ it.winnerID)
                 }
-            }}
-            .onMessage(CheckResult::class.java) { apply {
-                view.newResult(Adapter.toClassic(it.sender).path().name(), it.attackerID, it.black, it.white)
             }}
             .onMessage(StopGame::class.java) { apply { Services.unicast(Services.Service.STOP_GAME.key, context, it) } }
             .onMessage(Services.Unicast::class.java) { res -> apply { res.msg?.let { res.actor.tell(res.msg) } } }

@@ -67,13 +67,13 @@ class ArbiterActor: AbstractActor() {
     private val start: (StartGame) -> Unit = { msg ->
         viewActor = msg.sender
         secretValueLength = msg.secretLength
-        humanPlayer = msg.humanPlayer
-        players.putAll((0 until msg.playerCount).map { Pair("Player$it", Adapter.spawn(context,
+
+        if (msg.humanPlayer) players["Player0"] = msg.sender
+        players.putAll(((if (msg.humanPlayer) 1 else 0) until msg.playerCount).map { Pair("Player$it", Adapter.spawn(context,
                 PlayerActor.create("Player$it"), "Player$it")) })
 
         players.values.onEach { it.tell(StartGame(typedSelf, playersCount, secretValueLength, humanPlayer, players.values.toList())) }
         msg.sender.tell(GamePlayers(typedSelf, players.values.toList()))
-        if(humanPlayer) playersCount+1
         playerTurn = players.keys.sortedBy { Random.nextInt(playersCount) }.iterator()
 
         context.receiveTimeout = Duration.ofSeconds(3)
@@ -112,9 +112,7 @@ class ArbiterActor: AbstractActor() {
         turnPlayerID = playerTurn.next()
 
         context.become(receiveGuess())
-        if(turnPlayerID.equals("Player0") && humanPlayer) {
-            viewActor.tell(ExecTurn(typedSelf, turnNumber))
-        }else  players[turnPlayerID]?.tell(ExecTurn(typedSelf, turnNumber))
+        players[turnPlayerID]?.tell(ExecTurn(typedSelf, turnNumber))
     }
 
     private val checkWin: (response: CheckResult) -> Unit = {

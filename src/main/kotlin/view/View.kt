@@ -17,8 +17,6 @@ interface View {
 
     fun newWin(value:String)
 
-    fun humanStartGame()
-
     fun humanTurn(turn: Int)
 
     fun lostHumanTurn(turn: Int)
@@ -29,7 +27,7 @@ interface View {
 
     fun humanBlackWhite(black: Int, white:Int)
 
-    fun humanCheck(attempt: Array<Int>, sender: ActorRef<Message>, defender: String) {
+    fun humanCheck(attempt: Array<Int>, attacker: String, defender: String) {
 
     }
 }

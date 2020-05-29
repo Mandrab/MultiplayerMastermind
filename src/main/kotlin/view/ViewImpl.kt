@@ -1,6 +1,8 @@
 package view
 
 import akka.actor.typed.ActorRef
+import algorithm.Code
+import message.CheckResult
 import message.Message
 import message.StartGame
 import java.awt.GridBagConstraints
@@ -12,7 +14,8 @@ class ViewImpl : JFrame(), View {
     private val playerN = JTextField("6")
     private val secretLength = JTextField("4")
     private val humanPlayer = JCheckBox()
-
+    private lateinit var mySecret: Code
+    private lateinit var humanView: HumanView
     override lateinit var actor: ActorRef<Message>
 
     init {
@@ -43,6 +46,13 @@ class ViewImpl : JFrame(), View {
         add(JButton("Start").apply { addActionListener {
             visualization.actor = actor
             visualization.secretLenght = secretLength.text.toInt()
+            if (humanPlayer.isSelected){
+                val jp = JOptionPane.showInputDialog(this, "Insert secret number",
+                        "Secret Number", JOptionPane.QUESTION_MESSAGE)
+                mySecret = Code(jp.map { Integer.parseInt(it.toString()) }.toTypedArray())
+                humanView = HumanView(playerN.text.toInt(), secretLength.text.toInt(), mySecret, actor)
+                humanView.isVisible = true
+            }
             actor.tell(StartGame(actor, playerN.text.toInt(), secretLength.text.toInt(), humanPlayer.isSelected ,emptyList()))
             isVisible = false
             dispose()
@@ -73,7 +83,7 @@ class ViewImpl : JFrame(), View {
     }
 
     override fun humanTurn(turn: Int){
-        visualization.humanTurn(turn)
+        humanView.humanTurn(turn)
     }
 
     override fun lostHumanTurn(turn: Int){
@@ -81,23 +91,21 @@ class ViewImpl : JFrame(), View {
     }
 
     override fun humanWannaTry(){
-        visualization.humanWannaTry()
+       humanView.tryButton.isEnabled = true
     }
 
     override fun humanBanned(){
-        visualization.humanBanned()
+        humanView.tryButton.isEnabled = false
+        humanView.listButton.forEach{ it.isEnabled = false }
     }
 
     override fun humanBlackWhite(black: Int, white:Int){
         visualization.humanBlackWhite(black, white)
     }
 
-    override fun humanCheck(attempt: Array<Int>, sender: ActorRef<Message>, defender:String) {
-        visualization.humanCheck(attempt, sender, defender)
-    }
-
-    override fun humanStartGame(){
-        visualization.humanStartGame()
+    override fun humanCheck(attempt: Array<Int>, attacker: String, defender:String) {
+      val result =  mySecret.guess(Code(attempt))
+       actor.tell(CheckResult(actor, result.black, result.white, attacker , defender))
     }
 
 }

@@ -18,7 +18,11 @@ class Visualization : JFrame() , CodeMaker{
 
     lateinit var actor: ActorRef<Message>
     lateinit var humanAttempt: Array<Int>
+    private val panel: JPanel = JPanel()
+    private val textField: JTextField = JTextField()
+
     var secretLenght: Int = 0
+
 
     override val secret by lazy { Code() }
     override fun verify(guess: Code) = secret.guess(guess)
@@ -106,43 +110,9 @@ class Visualization : JFrame() , CodeMaker{
                 "End Game", JOptionPane.INFORMATION_MESSAGE)
     }
 
-    fun humanStartGame(){
-            //TODO. l'umano deve scegliere un numero ma come lo salvo ? ? come fai dopo a fare la check?
-    }
-
-    fun humanTurn(turn: Int){
-        val jp = JOptionPane.showInputDialog(this, "It's your turn$turn",
-                "Turn", JOptionPane.QUESTION_MESSAGE)
-        var i = 0
-        jp.forEach { humanAttempt[i++] = it.toInt() }
-        if ( humanAttempt.size!= secretLenght) {//TODO: valori != da interi
-            val rand = Random.nextInt(1, players.size)
-            actor.tell(Guess(actor, turn, humanAttempt, "Player0", "Player$rand"))
-        }else JOptionPane.showMessageDialog(this, "Wrong attempt",
-                "End Game", JOptionPane.ERROR_MESSAGE)
-    }
-
-    fun humanCheck(attempt: Array<Int>, sender: ActorRef<Message>, defender: String){
-        //TODO: strategia per verificare il numero
-        //actor.tell(CheckResult(actor, result.black, result.white, "Player0", defender)
-    }
-
     fun lostHumanTurn(turn: Int){
         JOptionPane.showMessageDialog(this, "Timeout! Lost turn$turn",
                 "Lost Turn", JOptionPane.INFORMATION_MESSAGE)
-    }
-
-    fun humanWannaTry(){
-        JOptionPane.showInputDialog(this, "Try Win?",
-                "Wanna Try", JOptionPane.QUESTION_MESSAGE)
-        //TODO: mando ad actorView try si o no con tutti i tentativi
-        //TODO-> PROBLEMA!!!!!!
-    }
-
-
-    fun humanBanned(){
-        JOptionPane.showMessageDialog(this, "Banned!!!",
-                "Banned", JOptionPane.INFORMATION_MESSAGE)
     }
 
     fun humanBlackWhite(black: Int, white:Int){
