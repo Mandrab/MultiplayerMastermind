@@ -87,7 +87,7 @@ class ViewImpl : JFrame(), View {
     }
 
     override fun lostHumanTurn(turn: Int){
-        visualization.lostHumanTurn(turn)
+        humanView.lostHumanTurn(turn)
     }
 
     override fun humanWannaTry(){
@@ -97,10 +97,11 @@ class ViewImpl : JFrame(), View {
     override fun humanBanned(){
         humanView.tryButton.isEnabled = false
         humanView.listButton.forEach{ it.isEnabled = false }
+        humanView.humanBanned()
     }
 
     override fun humanBlackWhite(black: Int, white:Int){
-        visualization.humanBlackWhite(black, white)
+        humanView.humanBlackWhite(black, white)
     }
 
     override fun humanCheck(attempt: Array<Int>, attacker: String, defender:String) {

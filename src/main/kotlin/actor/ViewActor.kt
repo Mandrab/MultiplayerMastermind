@@ -44,10 +44,11 @@ private lateinit var arbiterActor: ActorRef<Message>
                 arbiterActor.tell(it)
             }}
             .onMessage(Ban::class.java) { apply {
-                if(it.playerID.equals("Player0") && humanPlayer) view.humanBanned() else view.newBan(it.playerID)
+                if(it.playerID=="Player0" && humanPlayer) view.humanBanned() else view.newBan(it.playerID)
             }}
             .onMessage(LostTurn::class.java){apply {
-                if(it.attackerID.equals("Player0") && humanPlayer) view.lostHumanTurn(it.turn) else view.newLost(it.attackerID, it.turn, it.lostTurn)
+                println("Attacker"+it.attackerID+ "HUMAN"+ humanPlayer)
+                if(it.attackerID=="Player0" && humanPlayer) view.lostHumanTurn(it.turn) else view.newLost(it.attackerID, it.turn, it.lostTurn)
             }}
             .onMessage(End::class.java) {apply {
                 if(it.winnerID.isEmpty()){

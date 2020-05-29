@@ -18,7 +18,6 @@ class ArbiterActor: AbstractActor() {
 
     private var secretValueLength: Int = 0
     private var turnNumber: Int = 0
-    private var humanPlayer: Boolean = false
 
     private var numberOfCheck = 0
     private var correctDigits = 0
@@ -72,7 +71,7 @@ class ArbiterActor: AbstractActor() {
         players.putAll(((if (msg.humanPlayer) 1 else 0) until msg.playerCount).map { Pair("Player$it", Adapter.spawn(context,
                 PlayerActor.create("Player$it"), "Player$it")) })
 
-        players.values.onEach { it.tell(StartGame(typedSelf, playersCount, secretValueLength, humanPlayer, players.values.toList())) }
+        players.values.onEach { it.tell(StartGame(typedSelf, playersCount, secretValueLength, msg.humanPlayer, players.values.toList())) }
         msg.sender.tell(GamePlayers(typedSelf, players.values.toList()))
         playerTurn = players.keys.sortedBy { Random.nextInt(playersCount) }.iterator()
 

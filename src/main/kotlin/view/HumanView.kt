@@ -5,13 +5,13 @@ import algorithm.Code
 import message.Guess
 import message.Message
 import message.Try
+import java.awt.Color
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.JButton
 import javax.swing.JFrame
 import javax.swing.JOptionPane
 import javax.swing.JTextField
-import kotlin.random.Random
 
 class HumanView(playerN: Int, secretLenght: Int, humanSecret: Code, actor:ActorRef<Message>) : JFrame(){
 
@@ -23,6 +23,7 @@ class HumanView(playerN: Int, secretLenght: Int, humanSecret: Code, actor:ActorR
     private val mySecret : Code = humanSecret
     var tryButton : JButton
     var listButton = mutableListOf<JButton>()
+    var status: JTextField = JTextField().apply { columns = 25 }
 
     init {
         layout = GridBagLayout()
@@ -36,11 +37,12 @@ class HumanView(playerN: Int, secretLenght: Int, humanSecret: Code, actor:ActorR
             val playerName = JTextField("Player$i").apply { isEditable = false }
             add(playerName, gbc)
             gbc.gridx = 1
-            val textField = JTextField(" ").apply { isEditable = true; columns = 20 }
+            val textField = JTextField("").apply { isEditable = true; columns = 20 }
             add(textField, gbc)
             jTextFieldArray.add(textField)
             gbc.gridx = 2
             val button = JButton("Guess").apply { addActionListener {
+                println("TESTO->" + textField.text.length + "SECRET" + secretLenght)
                 if (textField.text.length == secretLenght) {
                     humanAttempt = textField.text.map { Integer.parseInt(it.toString()) }.toTypedArray()
                     actor.tell(Guess(actor, myTurn, humanAttempt, "Player0", playerName.text))
@@ -50,6 +52,7 @@ class HumanView(playerN: Int, secretLenght: Int, humanSecret: Code, actor:ActorR
                 }
             } }
             add(button, gbc)
+            button.isEnabled = false
             listButton.add(button)
         }
         gbc.gridy++
@@ -62,14 +65,31 @@ class HumanView(playerN: Int, secretLenght: Int, humanSecret: Code, actor:ActorR
         } }
         add(tryButton, gbc)
         tryButton.isEnabled = false
+        gbc.gridx = 0
+        add(status, gbc)
         pack()
     }
 
 
     fun humanTurn(turn:Int){
         myTurn = turn
-         JOptionPane.showMessageDialog(this, "It's your turn$turn",
-                "Turn", JOptionPane.INFORMATION_MESSAGE)
+        status.text = "It's your turn $turn"
+        status.background = Color.GREEN
+        listButton.forEach { it.isEnabled = true }
     }
 
+    fun lostHumanTurn(turn:Int){
+        status.text = "Lost turn $turn"
+        status.background = Color.RED
+    }
+
+    fun humanBlackWhite(black:Int, white:Int){
+        status.text = "Got $black black and $white white."
+        status.background = Color.BLUE
+    }
+
+    fun humanBanned(){
+        status.text ="You have been terminated."
+        status.background = Color.RED
+    }
 }

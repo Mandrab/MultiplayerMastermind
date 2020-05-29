@@ -110,13 +110,4 @@ class Visualization : JFrame() , CodeMaker{
                 "End Game", JOptionPane.INFORMATION_MESSAGE)
     }
 
-    fun lostHumanTurn(turn: Int){
-        JOptionPane.showMessageDialog(this, "Timeout! Lost turn$turn",
-                "Lost Turn", JOptionPane.INFORMATION_MESSAGE)
-    }
-
-    fun humanBlackWhite(black: Int, white:Int){
-        JOptionPane.showMessageDialog(this, "Got $black black and $white white.",
-                "BlackWhite", JOptionPane.INFORMATION_MESSAGE)
-    }
 }
