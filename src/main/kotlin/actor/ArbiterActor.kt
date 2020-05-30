@@ -19,14 +19,13 @@ class ArbiterActor: AbstractActor() {
     private var secretValueLength: Int = 0
     private var turnNumber: Int = 0
 
-    private var numberOfCheck = 0
-    private var correctDigits = 0
-
     private lateinit var playerTurn: Iterator<String>
     private lateinit var turnPlayerID: String
     private lateinit var attempterPlayer: ActorRef<Message>
 
     private lateinit var lastGuess: Guess
+    private var lastTryResults: MutableMap<String, Boolean>? = null
+    private var lastTry: Try? = null
 
     private lateinit var viewActor:ActorRef<Message>
 
@@ -57,20 +56,25 @@ class ArbiterActor: AbstractActor() {
 
     private fun receiveCheckGuess(): Receive = receiveBuilder()
             .match(CheckResult::class.java, guessResult)
-            .match(ReceiveTimeout::class.java) { players[lastGuess.defenderID]
-                    ?.tell(Check(typedSelf, lastGuess.attempt, lastGuess.attackerID, lastGuess.defenderID, turnNumber)) }
+            .match(ReceiveTimeout::class.java) { players[lastGuess.defenderID]?.tell(Check(typedSelf, lastGuess.attempt,
+                    lastGuess.attackerID, lastGuess.defenderID, lastGuess.turn)) }
             .match(StopGame::class.java, endGame)
             .build()
 
     private fun receiveTryWin(): Receive = receiveBuilder()
             .match(Try::class.java, tryWin)
             .match(CheckResult::class.java, checkWin)
-            .match(StopGame::class.java, endGame)
-            .match(ReceiveTimeout::class.java) { // TODO
-                viewActor.tell(LostTurn(typedSelf, turnPlayerID, turnNumber))
-                println("The $turnPlayerID lost turn")
-                turn()
+            .match(ReceiveTimeout::class.java) {
+                lastTry?.let { t ->
+                    players.keys.filterNot { lastTryResults?.keys?.contains(it) ?: false }.forEachIndexed { idx, it ->
+                        players[it]!!.tell(Check(typedSelf, t.attempt!![idx], t.sender.path().name(), it, turnNumber))
+                } } ?: let {
+                    viewActor.tell(LostTurn(typedSelf, turnPlayerID, turnNumber))
+                    println("The $turnPlayerID lost turn")
+                    turn()
+                }
             }
+            .match(StopGame::class.java, endGame)
             .build()
 
     private val start: (StartGame) -> Unit = { msg ->
@@ -97,7 +101,7 @@ class ArbiterActor: AbstractActor() {
         if (it.attackerID == turnPlayerID) {
             lastGuess = it
             context.become(receiveCheckGuess())
-            players[it.defenderID]?.tell(Check(typedSelf, it.attempt, it.attackerID, it.defenderID, turnNumber))
+            players[it.defenderID]?.tell(Check(typedSelf, it.attempt, it.attackerID, it.defenderID, it.turn))
         }
     }
 
@@ -109,13 +113,18 @@ class ArbiterActor: AbstractActor() {
         }
     }
 
-    private val tryWin: (Try) -> Unit = {
-        if (it.sender == attempterPlayer) {
-            if (it.attempt?.size == playersCount) it.attempt.forEachIndexed { idx, code ->
+    private val tryWin: (Try) -> Unit = { t ->
+        if (t.sender == attempterPlayer && t.turn == turnNumber) {
+            t.attempt?.apply {
+                lastTryResults = mutableMapOf()
+                lastTry = t
+            }
+            if (t.attempt?.size == playersCount) t.attempt.forEachIndexed { idx, code ->
                 val player = players.entries.elementAt(idx)
-                player.value.tell(Check(typedSelf, code, it.sender.path().name(), player.key, turnNumber))
+                player.value.tell(Check(typedSelf, code, t.sender.path().name(), player.key, turnNumber))
             } else turn()
-    } }
+        }
+    }
 
     private fun turn() {
         if (!playerTurn.hasNext()) {
@@ -129,28 +138,30 @@ class ArbiterActor: AbstractActor() {
     }
 
     private val checkWin: (response: CheckResult) -> Unit = {
-        correctDigits += it.black
-        if (++numberOfCheck == playersCount) { // rappresenta il numero di tentativi di vincita sottomessi
-            if (correctDigits == playersCount * secretValueLength) {
-                players.values.forEach { it.tell(End(typedSelf, turnPlayerID)) }
-                viewActor.tell(End(typedSelf, turnPlayerID))
-                println("Game ended. The winner is: $turnPlayerID")
-                endGame(null)
-            } else {
-                numberOfCheck = 0
-                correctDigits = 0
+        if (lastTry != null && it.attackerID == turnPlayerID && it.turn == turnNumber) {
+            lastTryResults!![it.defenderID] = secretValueLength == it.black
 
-                players.values.forEach { it.tell(Ban(typedSelf, turnPlayerID)) }
-                players.remove(turnPlayerID)
-                viewActor.tell(Ban(typedSelf, turnPlayerID))
-                println("$turnPlayerID has lost the game")
-
-                if (playersCount == 0){
-                    viewActor.tell(End(typedSelf , ""))
-                    println("No one won the game")
+            if (secretValueLength == it.black) {
+                if (lastTryResults!!.size == playersCount) {
+                    players.values.forEach { it.tell(End(typedSelf, turnPlayerID)) }
+                    viewActor.tell(End(typedSelf, turnPlayerID))
+                    println("Game ended. The winner is: $turnPlayerID")
                     endGame(null)
                 }
-                else turn()
+            } else {
+                lastTryResults = null
+                lastTry = null
+
+                players.values.forEach { it.tell(Ban(typedSelf, turnPlayerID)) }
+                viewActor.tell(Ban(typedSelf, turnPlayerID))
+                players.remove(turnPlayerID)
+                println("$turnPlayerID has lost the game")
+
+                if (playersCount == 0) {
+                    viewActor.tell(End(typedSelf, ""))
+                    println("No one won the game")
+                    endGame(null)
+                } else turn()
             }
         }
     }
