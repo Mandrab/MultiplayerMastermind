@@ -52,8 +52,9 @@ class ViewImpl(controller: Controller) : JFrame(), View {
                     mySecret = secretText.map { Integer.parseInt(it.toString()) }.toTypedArray()
                 } while (mySecret.size != secretLength)
 
-                humanView.actor = controller.humanPlayer
-                gameView.start(playerCount, secretLength, controller.humanPlayer)
+                val humanPlayer = controller.humanPlayer(mySecret)
+                humanView.actor = humanPlayer
+                gameView.start(playerCount, secretLength, humanPlayer)
             } else gameView.start(playerCount, secretLength, null)
 
             dispose()

@@ -1,5 +1,6 @@
 package actor
 
+import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
@@ -11,9 +12,14 @@ import view.HumanView
 class HumanPlayerActor private constructor(
         context: ActorContext<Message>,
         private val playerID: String,
-        private val view: HumanView
+        override var secret: Code,
+        private val view: HumanView,
+        private val arbiter: ActorRef<Message>
 ) : AbstractPlayerActor(context) {
-    override lateinit var secret: Code
+
+    override val onAny: (Message) -> Behavior<Message> = { apply {
+        if (it is Guess) arbiter.tell(it)
+    } }
 
     override val checkResult: (CheckResult) -> Behavior<Message> = { apply {
         view.newResult(it.defenderID, it.black, it.white)
@@ -47,9 +53,10 @@ class HumanPlayerActor private constructor(
     }
 
     companion object {
-        fun create(ID: String, view: HumanView): Behavior<Message> = Behaviors.setup {
+        fun create(ID: String, secret: Array<Int>, view: HumanView, arbiter: ActorRef<Message>): Behavior<Message> =
+                Behaviors.setup {
             it.system.receptionist().tell(Receptionist.register(Services.Service.OBSERVE_RESULT.key, it.self))
-            HumanPlayerActor(it, ID, view)
+            HumanPlayerActor(it, ID, Code(secret), view, arbiter)
         }
     }
 }

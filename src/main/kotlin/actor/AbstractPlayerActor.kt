@@ -23,6 +23,7 @@ abstract class AbstractPlayerActor(context: ActorContext<Message>) : AbstractBeh
             .onMessage(Ban::class.java, ban)
             .onMessage(StopGame::class.java, stopGame)
             .onMessage(End::class.java, end)
+            .onAnyMessage(onAny)
             .build()
 
     private val check: (Check) -> Behavior<Message> = { check -> also {
@@ -36,6 +37,8 @@ abstract class AbstractPlayerActor(context: ActorContext<Message>) : AbstractBeh
     private val broadcast: (Services.Broadcast) -> Behavior<Message> = { apply {
         it.actors.foreach { act -> act.tell(it.msg) }
     } }
+
+    open val onAny: (Message) -> Behavior<Message> = { this }
 
     abstract val checkResult: (CheckResult) -> Behavior<Message>
 

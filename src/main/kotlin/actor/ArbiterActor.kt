@@ -120,7 +120,6 @@ class ArbiterActor: AbstractActor() {
             playerTurn = players.keys.sortedBy { Random.nextInt(playersCount) }.iterator()
         }
         turnPlayerID = playerTurn.next()
-
         context.become(receiveGuess())
         players[turnPlayerID]?.tell(ExecTurn(typedSelf, turnNumber))
     }
