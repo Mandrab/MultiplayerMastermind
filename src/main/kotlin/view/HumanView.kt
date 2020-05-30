@@ -1,95 +1,97 @@
 package view
 
 import akka.actor.typed.ActorRef
-import algorithm.Code
 import message.Guess
 import message.Message
 import message.Try
 import java.awt.Color
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
-import javax.swing.JButton
-import javax.swing.JFrame
-import javax.swing.JOptionPane
-import javax.swing.JTextField
+import javax.swing.*
 
-class HumanView(playerN: Int, secretLenght: Int, humanSecret: Code, actor:ActorRef<Message>) : JFrame(){
+class HumanView(
+        private val playersCount: Int,
+        private val secretLength: Int,
+        private val mySecret: Array<Int>
+) : JFrame(){
+    private val attemptsFields = mutableListOf<JTextField>()
+    private val listButton = mutableListOf<JButton>()
+    private val tryButton = JButton("TryWin")
 
-    val actor: ActorRef<Message> = actor
-    val player : Int = playerN -1
-    lateinit var humanAttempt: Array<Int>
-    var myTurn: Int = 0
-    var jTextFieldArray = mutableListOf<JTextField>()
-    private val mySecret : Code = humanSecret
-    var tryButton : JButton
-    var listButton = mutableListOf<JButton>()
+    lateinit var actor: ActorRef<Message>
+
+    var turn: Int = 0
+
     var status: JTextField = JTextField().apply { columns = 25 }
 
     init {
         layout = GridBagLayout()
-        val gbc = GridBagConstraints()
 
+        val gbc = GridBagConstraints()
         gbc.fill = GridBagConstraints.BOTH
 
-        for(i in 0..player){
-            gbc.gridy = i
-            gbc.gridx=0
+        (0 until playersCount).onEach { i ->
             val playerName = JTextField("Player$i").apply { isEditable = false }
-            add(playerName, gbc)
-            gbc.gridx = 1
-            val textField = JTextField("").apply { isEditable = true; columns = 20 }
-            add(textField, gbc)
-            jTextFieldArray.add(textField)
-            gbc.gridx = 2
-            val button = JButton("Guess").apply { addActionListener {
-                println("TESTO->" + textField.text.length + "SECRET" + secretLenght)
-                if (textField.text.length == secretLenght) {
-                    humanAttempt = textField.text.map { Integer.parseInt(it.toString()) }.toTypedArray()
-                    actor.tell(Guess(actor, myTurn, humanAttempt, "Player0", playerName.text))
-                } else {
-                    JOptionPane.showMessageDialog(this, "Wrong input",
-                            "Wrong input", JOptionPane.ERROR_MESSAGE)
-                }
+            add(playerName, gbc.apply { gridx = 0; gridy = i })
+
+            val codeField = JTextField().apply { columns = 20 }
+            attemptsFields.add(codeField)
+            add(codeField, gbc.apply { gridx = 1 })
+
+            val button = JButton("Guess").apply {
+                isEnabled = false
+                addActionListener {
+                if (codeField.text.length == secretLength) {
+                    val humanAttempt = codeField.text.map { Integer.parseInt(it.toString()) }.toTypedArray()
+                    actor.tell(Guess(actor, turn, humanAttempt, "Player0", playerName.text))
+                } else JOptionPane.showMessageDialog(this, "Wrong input", "Wrong input",
+                        JOptionPane.ERROR_MESSAGE)
             } }
-            add(button, gbc)
-            button.isEnabled = false
             listButton.add(button)
+            add(button, gbc.apply { gridx = 2 })
         }
-        gbc.gridy++
-         tryButton = JButton("TryWin").apply { addActionListener {
-            val x = mutableListOf(mySecret.code.toTypedArray())
-            x.addAll(jTextFieldArray.map { it.text.map { Integer.parseInt(it.toString()) } .toTypedArray()})
-            if(x.any { it.size!=secretLenght } )
-                JOptionPane.showMessageDialog(this, "Wrong input", "Wrong input", JOptionPane.ERROR_MESSAGE)
-            else actor.tell(Try(actor, myTurn, x.toTypedArray()))
-        } }
-        add(tryButton, gbc)
+
+        tryButton.addActionListener {
+            val codes = mutableListOf(mySecret)
+            codes.addAll(attemptsFields.map { f -> f.text.map { Integer.parseInt(it.toString()) }.toTypedArray() })
+            if (codes.all { it.size == secretLength }) actor.tell(Try(actor, turn, codes.toTypedArray()))
+            else JOptionPane.showMessageDialog(this, "Wrong input", "Wrong input", JOptionPane.ERROR_MESSAGE)
+        }
         tryButton.isEnabled = false
-        gbc.gridx = 0
-        add(status, gbc)
+        add(tryButton, gbc.apply { ++gridy })
+
+        add(status, gbc.apply { gridy = 0 })
+
+        defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
+        isResizable = false
         pack()
+        isVisible = true
     }
 
+    fun wannaTry() { tryButton.isEnabled = true }
 
-    fun humanTurn(turn:Int){
-        myTurn = turn
+    fun banned() {
+        tryButton.isEnabled = false
+        listButton.forEach { it.isEnabled = false }
+
+        status.text = "You have lost the game."
+        status.background = Color.RED
+    }
+
+    fun execTurn(turn:Int) {
+        this.turn = turn
         status.text = "It's your turn $turn"
         status.background = Color.GREEN
         listButton.forEach { it.isEnabled = true }
     }
 
-    fun lostHumanTurn(turn:Int){
+    fun lostTurn(turn:Int) {
         status.text = "Lost turn $turn"
         status.background = Color.RED
     }
 
-    fun humanBlackWhite(black:Int, white:Int){
-        status.text = "Got $black black and $white white."
-        status.background = Color.BLUE
-    }
-
-    fun humanBanned(){
-        status.text ="You have been terminated."
-        status.background = Color.RED
+    fun attemptResult(black:Int, white:Int) {
+        status.text = "Last attempt got $black black and $white white."
+        status.background = Color.CYAN
     }
 }

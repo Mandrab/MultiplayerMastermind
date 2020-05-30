@@ -1,31 +1,18 @@
 package view
 
 import akka.actor.typed.ActorRef
-import algorithm.Code
-import algorithm.CodeMaker
-import message.CheckResult
-import message.Guess
 import message.Message
+import message.StartGame
 import message.StopGame
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
-import kotlin.random.Random
 
-class Visualization : JFrame() , CodeMaker{
+class GameView : JFrame() {
     private val players = mutableMapOf<String, Dialog>()
     private val playersID = JList(emptyArray<String>())
 
     lateinit var actor: ActorRef<Message>
-    lateinit var humanAttempt: Array<Int>
-    private val panel: JPanel = JPanel()
-    private val textField: JTextField = JTextField()
-
-    var secretLenght: Int = 0
-
-
-    override val secret by lazy { Code() }
-    override fun verify(guess: Code) = secret.guess(guess)
 
     init {
         layout = GridBagLayout()
@@ -52,6 +39,10 @@ class Visualization : JFrame() , CodeMaker{
         defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
         isResizable = false
         pack()
+    }
+
+    fun start(playerCount: Int, secretLength: Int, humanActor: ActorRef<Message>?) {
+        actor.tell(StartGame(actor, playerCount, secretLength, humanActor, emptyList()))
         isVisible = true
     }
 
@@ -64,7 +55,7 @@ class Visualization : JFrame() , CodeMaker{
             val gbc = GridBagConstraints()
 
             gbc.fill = GridBagConstraints.BOTH
-            add(JTextField("Attempts").apply { isEditable = false }, gbc)
+            add(JTextField("Attackers").apply { isEditable = false }, gbc)
 
             gbc.gridy = 1
             attemptsList.selectionMode = DefaultListSelectionModel.SINGLE_SELECTION
@@ -97,17 +88,16 @@ class Visualization : JFrame() , CodeMaker{
         }
     }
 
-    fun newLostTurn(attacker: String, turn: Int, value: String){
+    fun newLostTurn(attacker: String, turn: Int){
         players[attacker]?.let {
-            it.attempts.add("$value $turn.")
+            it.attempts.add("Turn $turn lost")
             it.attemptsList.setListData(it.attempts.toTypedArray())
             it.pack()
         }
     }
 
-    fun newWin(value:String){
+    fun newWin(value:String) {
         JOptionPane.showMessageDialog(this, value,
                 "End Game", JOptionPane.INFORMATION_MESSAGE)
     }
-
 }

@@ -1,22 +1,23 @@
 package view
 
-import akka.actor.typed.ActorRef
-import algorithm.Code
-import message.CheckResult
-import message.Message
-import message.StartGame
+import controller.Controller
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
 
-class ViewImpl : JFrame(), View {
-    private val visualization: Visualization by lazy { Visualization() }
-    private val playerN = JTextField("6")
-    private val secretLength = JTextField("4")
-    private val humanPlayer = JCheckBox()
-    private lateinit var mySecret: Code
-    private lateinit var humanView: HumanView
-    override lateinit var actor: ActorRef<Message>
+class ViewImpl(controller: Controller) : JFrame(), View {
+    private val playerCountField = JTextField("6")
+    private val secretLengthField = JTextField("4")
+    private val humanPlayerBox = JCheckBox()
+
+    private val playerCount: Int
+        get() = playerCountField.text.toInt()
+    private val secretLength: Int
+        get() = secretLengthField.text.toInt()
+    private var mySecret = Array(secretLength) { 0 }
+
+    override val gameView: GameView by lazy { GameView() }
+    override val humanView: HumanView by lazy { HumanView(playerCount, secretLength, mySecret) }
 
     init {
         layout = GridBagLayout()
@@ -34,27 +35,27 @@ class ViewImpl : JFrame(), View {
         gbc.gridx = 1
 
         gbc.gridy = 0
-        add(playerN, gbc)
+        add(playerCountField, gbc)
 
         gbc.gridy = 1
-        add(secretLength, gbc)
+        add(secretLengthField, gbc)
 
         gbc.gridy = 2
-        add(humanPlayer, gbc)
+        add(humanPlayerBox, gbc)
 
         gbc.gridy = 3
         add(JButton("Start").apply { addActionListener {
-            visualization.actor = actor
-            visualization.secretLenght = secretLength.text.toInt()
-            if (humanPlayer.isSelected){
-                val jp = JOptionPane.showInputDialog(this, "Insert secret number",
-                        "Secret Number", JOptionPane.QUESTION_MESSAGE)
-                mySecret = Code(jp.map { Integer.parseInt(it.toString()) }.toTypedArray())
-                humanView = HumanView(playerN.text.toInt(), secretLength.text.toInt(), mySecret, actor)
-                humanView.isVisible = true
-            }
-            actor.tell(StartGame(actor, playerN.text.toInt(), secretLength.text.toInt(), humanPlayer.isSelected ,emptyList()))
-            isVisible = false
+            if (humanPlayerBox.isSelected) {
+                do {
+                    val secretText = JOptionPane.showInputDialog(this, "Insert secret number",
+                            "Secret Number", JOptionPane.QUESTION_MESSAGE)
+                    mySecret = secretText.map { Integer.parseInt(it.toString()) }.toTypedArray()
+                } while (mySecret.size != secretLength)
+
+                humanView.actor = controller.humanPlayer
+                gameView.start(playerCount, secretLength, controller.humanPlayer)
+            } else gameView.start(playerCount, secretLength, null)
+
             dispose()
         } }, gbc)
 
@@ -63,50 +64,4 @@ class ViewImpl : JFrame(), View {
         pack()
         isVisible = true
     }
-
-    override fun newPlayer(ID: String) { visualization.newPlayer(ID) }
-
-    override fun newResult(attacker: String, defender: String, black: Int, white: Int) {
-        visualization.newResult(attacker, defender, black, white)
-    }
-
-    override fun newBan(attacker: String){
-        visualization.newBan(attacker)
-    }
-
-    override fun newLost(attacker: String, turn: Int, value: String){
-        visualization.newLostTurn(attacker, turn, value)
-    }
-
-    override fun newWin(value:String){
-        visualization.newWin(value)
-    }
-
-    override fun humanTurn(turn: Int){
-        humanView.humanTurn(turn)
-    }
-
-    override fun lostHumanTurn(turn: Int){
-        humanView.lostHumanTurn(turn)
-    }
-
-    override fun humanWannaTry(){
-       humanView.tryButton.isEnabled = true
-    }
-
-    override fun humanBanned(){
-        humanView.tryButton.isEnabled = false
-        humanView.listButton.forEach{ it.isEnabled = false }
-        humanView.humanBanned()
-    }
-
-    override fun humanBlackWhite(black: Int, white:Int){
-        humanView.humanBlackWhite(black, white)
-    }
-
-    override fun humanCheck(attempt: Array<Int>, attacker: String, defender:String) {
-      val result =  mySecret.guess(Code(attempt))
-       actor.tell(CheckResult(actor, result.black, result.white, attacker , defender))
-    }
-
 }

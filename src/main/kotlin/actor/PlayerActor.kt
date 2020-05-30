@@ -67,8 +67,8 @@ class PlayerActor private constructor(
         }
     } }
 
-    private val broadcast: (Services.Broadcast) -> Behavior<Message> = { broadcast -> also {
-        broadcast.actors.foreach { it.tell(broadcast.msg) }
+    private val broadcast: (Services.Broadcast) -> Behavior<Message> = { apply {
+        it.actors.foreach { act -> act.tell(it.msg) }
     } }
 
     private val wannaTry: (WannaTry) -> Behavior<Message> = { result -> also {

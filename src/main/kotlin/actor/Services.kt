@@ -25,9 +25,9 @@ object Services {
             .receptionist().tell(Receptionist.find(key, context.messageAdapter(Receptionist.Listing::class.java) {
                 Broadcast(msg, it, key) }))
 
-    class Unicast (val msg: Message?, listing: Receptionist.Listing, key: ServiceKey<Message>?): Message {
+    class Unicast (val msg: Message?, private val listing: Receptionist.Listing, key: ServiceKey<Message>?): Message {
         override val sender: TypedActorRef<Message> = Adapter.toTyped(ActorRef.noSender())
-        val actor: TypedActorRef<Message> = listing.allServiceInstances(key).last()
+        val actor = if (listing.allServiceInstances(key).isEmpty) null else listing.allServiceInstances(key).head()
     }
 
     class Broadcast (val msg: Message?, listing: Receptionist.Listing, key: ServiceKey<Message>?): Message {

@@ -44,7 +44,11 @@ class ArbiterActor: AbstractActor() {
     private fun receiveGuess(): Receive = receiveBuilder()
             .match(Guess::class.java, guess)
             .match(Try::class.java) { context.become(receiveTryWin()); tryWin(it) }
-            .match(ReceiveTimeout::class.java) { viewActor.tell(LostTurn(typedSelf,"The $turnPlayerID lost turn", this.turnPlayerID, this.turnNumber)); println("The $turnPlayerID lost turn"); turn() }
+            .match(ReceiveTimeout::class.java) {
+                viewActor.tell(LostTurn(typedSelf, turnPlayerID, turnNumber))
+                println("The $turnPlayerID lost turn")
+                turn()
+            }
             .match(StopGame::class.java, endGame)
             .build()
 
@@ -59,7 +63,11 @@ class ArbiterActor: AbstractActor() {
             .match(Try::class.java, tryWin)
             .match(CheckResult::class.java, checkWin)
             .match(StopGame::class.java, endGame)
-            .match(ReceiveTimeout::class.java) { viewActor.tell(LostTurn(typedSelf,"The $turnPlayerID lost turn", this.turnPlayerID, this.turnNumber)); println("The $turnPlayerID lost turn"); turn() }
+            .match(ReceiveTimeout::class.java) {
+                viewActor.tell(LostTurn(typedSelf, turnPlayerID, turnNumber))
+                println("The $turnPlayerID lost turn")
+                turn()
+            }
             .build()
 
 
@@ -67,12 +75,14 @@ class ArbiterActor: AbstractActor() {
         viewActor = msg.sender
         secretValueLength = msg.secretLength
 
-        if (msg.humanPlayer) players["Player0"] = msg.sender
-        players.putAll(((if (msg.humanPlayer) 1 else 0) until msg.playerCount).map { Pair("Player$it", Adapter.spawn(context,
-                PlayerActor.create("Player$it"), "Player$it")) })
+        msg.humanPlayer?.let { players["Player0"] = it }
+        while (playersCount < msg.playerCount)
+            "Player${players.size}".let { players[it] = Adapter.spawn(context, PlayerActor.create(it), it) }
 
-        players.values.onEach { it.tell(StartGame(typedSelf, playersCount, secretValueLength, msg.humanPlayer, players.values.toList())) }
         msg.sender.tell(GamePlayers(typedSelf, players.values.toList()))
+        players.values.onEach {
+            it.tell(StartGame(typedSelf, playersCount, secretValueLength, null, players.values.toList()))
+        }
         playerTurn = players.keys.sortedBy { Random.nextInt(playersCount) }.iterator()
 
         context.receiveTimeout = Duration.ofSeconds(3)

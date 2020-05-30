@@ -1,33 +1,8 @@
 package view
 
-import akka.actor.typed.ActorRef
-import message.Message
-
 interface View {
 
-    var actor: ActorRef<Message>
+    val gameView: GameView
 
-    fun newPlayer(ID: String)
-
-    fun newResult(attacker: String, defender: String, black: Int, white: Int)
-
-    fun newBan(attacker: String)
-
-    fun newLost(attacker: String, turn:Int, value:String)
-
-    fun newWin(value:String)
-
-    fun humanTurn(turn: Int)
-
-    fun lostHumanTurn(turn: Int)
-
-    fun humanWannaTry()
-
-    fun humanBanned()
-
-    fun humanBlackWhite(black: Int, white:Int)
-
-    fun humanCheck(attempt: Array<Int>, attacker: String, defender: String) {
-
-    }
+    val humanView: HumanView?
 }
