@@ -25,12 +25,12 @@ abstract class AbstractPlayerActor(context: ActorContext<Message>) : AbstractBeh
             .onAnyMessage(onAny)
             .build()
 
-    private val check: (Check) -> Behavior<Message> = { check -> also {
-        val result = secret.guess(Code(check.attempt))
-        val checkResult = CheckResult(context.self, result.black, result.white, check.attackerID, check.defenderID) // TODO check mainreceiver
+    private val check: (Check) -> Behavior<Message> = { apply {
+        val result = secret.guess(Code(it.attempt))
+        val checkResult = CheckResult(context.self, result.black, result.white, it.attackerID, it.defenderID, it.turn)
 
         Services.broadcastList(Services.Service.OBSERVE_RESULT.key, context, checkResult)
-        check.sender.tell(checkResult)
+        it.sender.tell(checkResult)
     } }
 
     private val broadcast: (Services.Broadcast) -> Behavior<Message> = { apply {

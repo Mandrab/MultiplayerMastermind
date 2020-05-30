@@ -7,4 +7,6 @@ data class CheckResult(
         val black: Int,             // correctPlace
         val white: Int,             // wrongPlace
         val attackerID: String,
-        val defenderID: String): Message
+        val defenderID: String,
+        val turn: Int
+): Message

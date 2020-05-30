@@ -6,5 +6,6 @@ data class Check(
         override val sender: ActorRef<Message>,
         val attempt: Array<Int>,
         val attackerID: String,
-        val defenderID: String
+        val defenderID: String,
+        val turn: Int
 ): Message

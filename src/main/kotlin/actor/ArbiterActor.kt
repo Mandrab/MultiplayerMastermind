@@ -45,7 +45,7 @@ class ArbiterActor: AbstractActor() {
 
     private fun receiveGuess(): Receive = receiveBuilder()
             .match(Guess::class.java, guess)
-            .match(Try::class.java) { context.become(receiveTryWin()); tryWin(it) }
+            .match(Try::class.java) { if (it.sender == attempterPlayer) context.become(receiveTryWin()); tryWin(it) }
             .match(ReceiveTimeout::class.java) {
                 attempterPlayer.tell(LostTurn(typedSelf, turnPlayerID, turnNumber))
                 viewActor.tell(LostTurn(typedSelf, turnPlayerID, turnNumber))
@@ -58,7 +58,7 @@ class ArbiterActor: AbstractActor() {
     private fun receiveCheckGuess(): Receive = receiveBuilder()
             .match(CheckResult::class.java, guessResult)
             .match(ReceiveTimeout::class.java) { players[lastGuess.defenderID]
-                    ?.tell(Check(typedSelf, lastGuess.attempt, lastGuess.attackerID, lastGuess.defenderID)) }
+                    ?.tell(Check(typedSelf, lastGuess.attempt, lastGuess.attackerID, lastGuess.defenderID, turnNumber)) }
             .match(StopGame::class.java, endGame)
             .build()
 
@@ -66,7 +66,7 @@ class ArbiterActor: AbstractActor() {
             .match(Try::class.java, tryWin)
             .match(CheckResult::class.java, checkWin)
             .match(StopGame::class.java, endGame)
-            .match(ReceiveTimeout::class.java) {
+            .match(ReceiveTimeout::class.java) { // TODO
                 viewActor.tell(LostTurn(typedSelf, turnPlayerID, turnNumber))
                 println("The $turnPlayerID lost turn")
                 turn()
@@ -97,22 +97,25 @@ class ArbiterActor: AbstractActor() {
         if (it.attackerID == turnPlayerID) {
             lastGuess = it
             context.become(receiveCheckGuess())
-            players[it.defenderID]?.tell(Check(typedSelf, it.attempt, it.attackerID, it.defenderID))
+            players[it.defenderID]?.tell(Check(typedSelf, it.attempt, it.attackerID, it.defenderID, turnNumber))
         }
     }
 
-    private val guessResult: (result: CheckResult) -> Unit = {
-        println("$turnPlayerID got ${it.black} black and ${it.white} white.")
-        context.become(receiveTryWin())
-        attempterPlayer.tell(WannaTry(typedSelf, turnNumber))
+    private val guessResult: (result: CheckResult) -> Unit = { r ->
+        if (lastGuess.attackerID == r.attackerID && lastGuess.defenderID == r.defenderID && lastGuess.turn == r.turn) {
+            println("$turnPlayerID got ${r.black} black and ${r.white} white.")
+            context.become(receiveTryWin())
+            attempterPlayer.tell(WannaTry(typedSelf, turnNumber))
+        }
     }
 
     private val tryWin: (Try) -> Unit = {
-        if (it.attempt?.size == playersCount) it.attempt.forEachIndexed { idx, code ->
-            val player = players.entries.elementAt(idx)
-            player.value.tell(Check(typedSelf, code, it.sender.path().name(), player.key))
-        } else turn()
-    }
+        if (it.sender == attempterPlayer) {
+            if (it.attempt?.size == playersCount) it.attempt.forEachIndexed { idx, code ->
+                val player = players.entries.elementAt(idx)
+                player.value.tell(Check(typedSelf, code, it.sender.path().name(), player.key, turnNumber))
+            } else turn()
+    } }
 
     private fun turn() {
         if (!playerTurn.hasNext()) {
