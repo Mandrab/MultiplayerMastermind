@@ -30,11 +30,13 @@ class ArbiterActor: AbstractActor() {
 
     private lateinit var viewActor:ActorRef<Message>
 
-    override fun preStart() = super.preStart().also {
-        Adapter.toTyped(context.system).receptionist()
-                .tell(Receptionist.register(Services.Service.START_GAME.key, Adapter.toTyped(self)))
-        Adapter.toTyped(context.system).receptionist()
-                .tell(Receptionist.register(Services.Service.STOP_GAME.key, Adapter.toTyped(self))) }
+    override fun preStart() {
+        super.preStart()
+        Adapter.toTyped(context.system).receptionist().tell(Receptionist.register(Services.Service.START_GAME.key,
+                Adapter.toTyped(self)))
+        Adapter.toTyped(context.system).receptionist().tell(Receptionist.register(Services.Service.STOP_GAME.key,
+                Adapter.toTyped(self)))
+    }
 
     override fun createReceive(): Receive = receiveBuilder()
             .match(StartGame::class.java, start)
@@ -71,7 +73,6 @@ class ArbiterActor: AbstractActor() {
             }
             .build()
 
-
     private val start: (StartGame) -> Unit = { msg ->
         viewActor = msg.sender
         secretValueLength = msg.secretLength
@@ -97,7 +98,6 @@ class ArbiterActor: AbstractActor() {
             lastGuess = it
             context.become(receiveCheckGuess())
             players[it.defenderID]?.tell(Check(typedSelf, it.attempt, it.attackerID, it.defenderID))
-            attempterPlayer = it.sender
         }
     }
 
@@ -110,7 +110,7 @@ class ArbiterActor: AbstractActor() {
     private val tryWin: (Try) -> Unit = {
         if (it.attempt?.size == playersCount) it.attempt.forEachIndexed { idx, code ->
             val player = players.entries.elementAt(idx)
-            player.value.tell(Check(typedSelf, code, self.path().name(), player.key))
+            player.value.tell(Check(typedSelf, code, it.sender.path().name(), player.key))
         } else turn()
     }
 
@@ -120,6 +120,7 @@ class ArbiterActor: AbstractActor() {
             playerTurn = players.keys.sortedBy { Random.nextInt(playersCount) }.iterator()
         }
         turnPlayerID = playerTurn.next()
+        attempterPlayer = players[turnPlayerID]!!
         context.become(receiveGuess())
         players[turnPlayerID]?.tell(ExecTurn(typedSelf, turnNumber))
     }
@@ -153,7 +154,7 @@ class ArbiterActor: AbstractActor() {
 
     private val endGame: (StopGame?) -> Unit = {
         players.values.forEach { it.tell(StopGame(typedSelf)) }
-        context.children.forEach{ context.stop(it) } // così uccide i figli TODO serve sia la tell Stop che questa o ne basta una?
+        context.children.forEach { context.stop(it) } // così uccide i figli TODO serve sia la tell Stop che questa o ne basta una?
         context.stop(context.self) //così si auto uccide
     }
 }
