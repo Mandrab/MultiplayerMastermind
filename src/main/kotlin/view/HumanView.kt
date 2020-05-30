@@ -84,11 +84,14 @@ class HumanView(
         status.text = "It's your turn $turn"
         status.background = Color.GREEN
         listButton.forEach { it.isEnabled = true }
+        tryButton.isEnabled = false
     }
 
     fun lostTurn(turn: Int) {
         status.text = "Lost turn $turn"
         status.background = Color.RED
+        listButton.forEach { it.isEnabled = false }
+        tryButton.isEnabled = false
     }
 
     fun newResult(defender: String, black: Int, white: Int) {
@@ -99,16 +102,22 @@ class HumanView(
     fun stop() {
         status.text = "Game has been stopped."
         status.background = Color.RED
+        listButton.forEach { it.isEnabled = false }
+        tryButton.isEnabled = false
     }
 
     fun endGame(win: Boolean) {
         if (win) {
             status.text = "You have win the game!"
             status.background = Color.GREEN
+            listButton.forEach { it.isEnabled = false }
+            tryButton.isEnabled = false
         }
         else {
             status.text = "Game ended. You loose"
             status.background = Color.RED
+            listButton.forEach { it.isEnabled = false }
+            tryButton.isEnabled = false
         }
     }
 }
