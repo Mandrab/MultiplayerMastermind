@@ -30,7 +30,7 @@ class HumanView(
         val gbc = GridBagConstraints()
         gbc.fill = GridBagConstraints.BOTH
 
-        (0 until playersCount).onEach { i ->
+        (1 until playersCount).onEach { i ->
             val playerName = JTextField("Player$i").apply { isEditable = false }
             add(playerName, gbc.apply { gridx = 0; gridy = i })
 
@@ -60,7 +60,8 @@ class HumanView(
         tryButton.isEnabled = false
         add(tryButton, gbc.apply { ++gridy })
 
-        add(status, gbc.apply { gridy = 0 })
+        gbc.apply { gridx = 0; gridwidth = 2 }
+        add(status, gbc.apply { gridx = 0 })
 
         defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
         isResizable = false
@@ -70,7 +71,7 @@ class HumanView(
 
     fun wannaTry() { tryButton.isEnabled = true }
 
-    fun banned() {
+    fun ban() {
         tryButton.isEnabled = false
         listButton.forEach { it.isEnabled = false }
 
@@ -78,20 +79,36 @@ class HumanView(
         status.background = Color.RED
     }
 
-    fun execTurn(turn:Int) {
+    fun execTurn(turn: Int) {
         this.turn = turn
         status.text = "It's your turn $turn"
         status.background = Color.GREEN
         listButton.forEach { it.isEnabled = true }
     }
 
-    fun lostTurn(turn:Int) {
+    fun lostTurn(turn: Int) {
         status.text = "Lost turn $turn"
         status.background = Color.RED
     }
 
-    fun attemptResult(black:Int, white:Int) {
-        status.text = "Last attempt got $black black and $white white."
+    fun newResult(defender: String, black: Int, white: Int) {
+        status.text = "Last attempt against $defender got $black black and $white white."
         status.background = Color.CYAN
+    }
+
+    fun stop() {
+        status.text = "Game has been stopped."
+        status.background = Color.RED
+    }
+
+    fun endGame(win: Boolean) {
+        if (win) {
+            status.text = "You have win the game!"
+            status.background = Color.GREEN
+        }
+        else {
+            status.text = "Game ended. You loose"
+            status.background = Color.RED
+        }
     }
 }

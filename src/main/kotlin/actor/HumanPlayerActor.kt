@@ -16,28 +16,35 @@ class HumanPlayerActor private constructor(
     override lateinit var secret: Code
 
     override val checkResult: (CheckResult) -> Behavior<Message> = { apply {
-        // TODO
+        view.newResult(it.defenderID, it.black, it.white)
     } }
 
     override val execTurn: (ExecTurn) -> Behavior<Message> = { apply {
-        // TODO
+        view.execTurn(it.turn)
     } }
 
     override val wannaTry: (WannaTry) -> Behavior<Message> = { apply {
-        // TODO
+        view.wannaTry()
     } }
 
-    override val ban: (Ban) -> Behavior<Message> = { apply {
-        // TODO
+    override val lostTurn: (LostTurn) -> Behavior<Message> = { apply {
+        view.lostTurn(it.turn)
     } }
 
-    override val stopGame: (StopGame) -> Behavior<Message> = { apply {
-        // TODO
-    } }
+    override val ban: (Ban) -> Behavior<Message> = {
+        view.ban()
+        Behaviors.stopped()
+    }
 
-    override val end: (End) -> Behavior<Message> = { apply {
-        // TODO
-    } }
+    override val stopGame: (StopGame) -> Behavior<Message> = {
+        view.stop()
+        Behaviors.stopped()
+    }
+
+    override val end: (End) -> Behavior<Message> = {
+        view.endGame(it.winnerID == playerID)
+        Behaviors.stopped()
+    }
 
     companion object {
         fun create(ID: String, view: HumanView): Behavior<Message> = Behaviors.setup {

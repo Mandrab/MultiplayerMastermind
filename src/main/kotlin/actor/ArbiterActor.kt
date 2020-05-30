@@ -45,6 +45,7 @@ class ArbiterActor: AbstractActor() {
             .match(Guess::class.java, guess)
             .match(Try::class.java) { context.become(receiveTryWin()); tryWin(it) }
             .match(ReceiveTimeout::class.java) {
+                attempterPlayer.tell(LostTurn(typedSelf, turnPlayerID, turnNumber))
                 viewActor.tell(LostTurn(typedSelf, turnPlayerID, turnNumber))
                 println("The $turnPlayerID lost turn")
                 turn()

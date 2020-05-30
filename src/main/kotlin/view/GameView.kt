@@ -7,6 +7,7 @@ import message.StopGame
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
+import kotlin.system.exitProcess
 
 class GameView : JFrame() {
     private val players = mutableMapOf<String, Dialog>()
@@ -32,7 +33,8 @@ class GameView : JFrame() {
         add(JButton("End Game").apply {
             addActionListener {
                 actor.tell(StopGame(actor))
-                this.isEnabled = false
+                isEnabled = false
+                exitProcess(0)
             }
         }, gbc)
 
@@ -82,7 +84,7 @@ class GameView : JFrame() {
 
     fun newBan(attacker: String) {
         players[attacker]?.let {
-            it.attempts.add("Banned!!! ")
+            it.attempts.add("Game lost")
             it.attemptsList.setListData(it.attempts.toTypedArray())
             it.pack()
         }

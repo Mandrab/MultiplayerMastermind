@@ -14,14 +14,15 @@ abstract class AbstractPlayerActor(context: ActorContext<Message>) : AbstractBeh
     override fun verify(guess: Code) = secret.guess(guess)
 
     override fun createReceive(): Receive<Message> = newReceiveBuilder()
-            .onMessage(Ban::class.java, ban)
-            .onMessage(StopGame::class.java, stopGame)
-            .onMessage(End::class.java, end)
             .onMessage(ExecTurn::class.java, execTurn)
             .onMessage(Check::class.java, check)
             .onMessage(CheckResult::class.java, checkResult)
             .onMessage(Services.Broadcast::class.java, broadcast)
             .onMessage(WannaTry::class.java, wannaTry)
+            .onMessage(LostTurn::class.java, lostTurn)
+            .onMessage(Ban::class.java, ban)
+            .onMessage(StopGame::class.java, stopGame)
+            .onMessage(End::class.java, end)
             .build()
 
     private val check: (Check) -> Behavior<Message> = { check -> also {
@@ -41,6 +42,8 @@ abstract class AbstractPlayerActor(context: ActorContext<Message>) : AbstractBeh
     abstract val execTurn: (ExecTurn) -> Behavior<Message>
 
     abstract val wannaTry: (WannaTry) -> Behavior<Message>
+
+    abstract val lostTurn: (LostTurn) -> Behavior<Message>
 
     abstract val ban: (Ban) -> Behavior<Message>
 
