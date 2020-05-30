@@ -19,6 +19,7 @@ class HumanPlayerActor private constructor(
 
     override val onAny: (Message) -> Behavior<Message> = { apply {
         if (it is Guess) arbiter.tell(it)
+        if (it is Try) arbiter.tell(it)
     } }
 
     override val checkResult: (CheckResult) -> Behavior<Message> = { apply {
