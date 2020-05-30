@@ -13,7 +13,7 @@ import message.*
 class PlayerActor private constructor(
         context: ActorContext<Message>,
         private val playerID: String
-) : AbstractBehavior<Message>(context), CodeMaker {
+) : AbstractPlayerActor(context), CodeMaker {
     private lateinit var playersStates: MutableMap<String, AttackerStrategy>
     private var lastAttack: Pair<String, Code>? = null
 
@@ -25,19 +25,7 @@ class PlayerActor private constructor(
         playersStates = (0 until it.playerCount).map { Pair("Player$it", AttackerStrategy()) }.toMap().toMutableMap()
     } }.build()
 
-    override fun createReceive(): Receive<Message> = newReceiveBuilder()
-            .onMessage(Ban::class.java, ban)
-            .onMessage(StopGame::class.java) { Behaviors.stopped() }
-            .onMessage(End::class.java) { Behaviors.stopped() }
-            .onMessage(ExecTurn::class.java, execTurn)
-            .onMessage(Check::class.java, check)
-            .onMessage(CheckResult::class.java, checkResult)
-            .onMessage(Services.Broadcast::class.java, broadcast)
-            .onMessage(WannaTry::class.java, wannaTry)
-            .onMessage(Update::class.java, update)
-            .build()
-
-    private val execTurn: (ExecTurn) -> Behavior<Message> = { exec -> also {
+    override val execTurn: (ExecTurn) -> Behavior<Message> = { exec -> also {
         if (playersStates.filterNot { it.key == playerID }.all { it.value.found }) {
             exec.sender.tell(Try(context.self, exec.turn, playersStates.map {
                 if (it.key == playerID) secret.code.toTypedArray()
@@ -51,15 +39,7 @@ class PlayerActor private constructor(
         }
     } }
 
-    private val check: (Check) -> Behavior<Message> = { check -> also {
-        val result = secret.guess(Code(check.attempt))
-        val checkResult = CheckResult(context.self, result.black, result.white, check.attackerID, check.defenderID) // TODO check mainreceiver
-
-        Services.broadcastList(Services.Service.OBSERVE_RESULT.key, context, checkResult)
-        check.sender.tell(checkResult)
-    } }
-
-    private val checkResult: (CheckResult) -> Behavior<Message> = { result -> also {
+    override val checkResult: (CheckResult) -> Behavior<Message> = { result -> also {
         if (result.attackerID == playerID) lastAttack?.let {
             playersStates[it.first]?.attemptResult(it.second, Result(result.black, result.white))
             lastAttack = null
@@ -67,11 +47,7 @@ class PlayerActor private constructor(
         }
     } }
 
-    private val broadcast: (Services.Broadcast) -> Behavior<Message> = { apply {
-        it.actors.foreach { act -> act.tell(it.msg) }
-    } }
-
-    private val wannaTry: (WannaTry) -> Behavior<Message> = { result -> also {
+    override val wannaTry: (WannaTry) -> Behavior<Message> = { result -> also {
         if (playersStates.filterNot { it.key == playerID }.values.all { it.found }) {
             result.sender.tell(Try(context.self, result.turn, playersStates.map {
                 if (it.key == playerID) secret.code.toTypedArray()
@@ -79,14 +55,9 @@ class PlayerActor private constructor(
         } else result.sender.tell(Try(context.self, result.turn, null))
     } }
 
-    private val update: (Update) -> Behavior<Message> = { also {
-        playersStates.values.firstOrNull { !it.ready }?.let {
-            it.tickUpdate()
-            context.self.tell(Update())
-        }
-    } }
+    override val lostTurn: (LostTurn) -> Behavior<Message> = { this }
 
-    private val ban: (Ban) -> Behavior<Message> = {
+    override val ban: (Ban) -> Behavior<Message> = {
         if (it.playerID == playerID) {
             Behaviors.stopped()
         } else {
@@ -94,6 +65,17 @@ class PlayerActor private constructor(
             this@PlayerActor
         }
     }
+
+    override val stopGame: (StopGame) -> Behavior<Message> = { Behaviors.stopped() }
+
+    override val end: (End) -> Behavior<Message> = { Behaviors.stopped() }
+
+    override val onAny: (Message) -> Behavior<Message> = { apply {
+        if (it is Update) playersStates.values.firstOrNull { !it.ready }?.let {
+            it.tickUpdate()
+            context.self.tell(Update())
+        }
+    } }
 
     companion object {
         fun create(ID: String): Behavior<Message> = Behaviors.setup {

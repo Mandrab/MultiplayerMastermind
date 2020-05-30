@@ -2,7 +2,6 @@ package actor
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.*
-import algorithm.AttackerStrategy
 import algorithm.Code
 import algorithm.CodeMaker
 import message.*
@@ -40,9 +39,9 @@ abstract class AbstractPlayerActor(context: ActorContext<Message>) : AbstractBeh
 
     open val onAny: (Message) -> Behavior<Message> = { this }
 
-    abstract val checkResult: (CheckResult) -> Behavior<Message>
-
     abstract val execTurn: (ExecTurn) -> Behavior<Message>
+
+    abstract val checkResult: (CheckResult) -> Behavior<Message>
 
     abstract val wannaTry: (WannaTry) -> Behavior<Message>
 
