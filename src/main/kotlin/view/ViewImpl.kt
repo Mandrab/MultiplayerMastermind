@@ -1,6 +1,8 @@
 package view
 
+import akka.actor.typed.ActorRef
 import controller.Controller
+import message.Message
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
@@ -49,7 +51,13 @@ class ViewImpl(controller: Controller) : JFrame(), View {
                 do {
                     val secretText = JOptionPane.showInputDialog(this, "Insert secret number",
                             "Secret Number", JOptionPane.QUESTION_MESSAGE)
-                    mySecret = secretText.map { Integer.parseInt(it.toString()) }.toTypedArray()
+
+                    try{
+                        if(secretText == null){
+                            System.exit(0)
+                        }else mySecret = secretText.map { Integer.parseInt(it.toString()) }.toTypedArray()
+                    }catch(e: Exception){ e.printStackTrace() }
+
                 } while (mySecret.size != secretLength)
 
                 val humanPlayer = controller.humanPlayer(mySecret)
