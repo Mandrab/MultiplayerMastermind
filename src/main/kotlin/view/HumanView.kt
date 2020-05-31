@@ -69,7 +69,10 @@ class HumanView(
         isVisible = true
     }
 
-    fun wannaTry() { tryButton.isEnabled = true }
+    fun wannaTry() {
+        listButton.forEach { it.isEnabled = false }
+        tryButton.isEnabled = true
+    }
 
     fun ban() {
         tryButton.isEnabled = false
@@ -84,7 +87,7 @@ class HumanView(
         status.text = "It's your turn $turn"
         status.background = Color.GREEN
         listButton.forEach { it.isEnabled = true }
-        tryButton.isEnabled = false
+        tryButton.isEnabled = true
     }
 
     fun lostTurn(turn: Int) {

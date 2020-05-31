@@ -9,7 +9,6 @@ class ViewImpl(controller: Controller) : JFrame(), View {
     private val playerCountField = JTextField("6")
     private val secretLengthField = JTextField("4")
     private val humanPlayerBox = JCheckBox()
-    private var noHuman : Boolean = false
 
     private val playerCount: Int
         get() = playerCountField.text.toInt()
@@ -47,26 +46,23 @@ class ViewImpl(controller: Controller) : JFrame(), View {
         gbc.gridy = 3
         add(JButton("Start").apply { addActionListener {
             if (humanPlayerBox.isSelected) {
+                var validSecret = false
+
                 do {
                     val secretText = JOptionPane.showInputDialog(this, "Insert secret number",
                             "Secret Number", JOptionPane.QUESTION_MESSAGE)
 
-                    try{
-                        if(secretText == null){
-                            defaultCloseOperation
-                            noHuman = true
-                            gameView.start(playerCount, secretLength, null)
-                            //System.exit(0)
-                        }else mySecret = secretText.map { Integer.parseInt(it.toString()) }.toTypedArray()
-                    }catch(e: Exception){ e.printStackTrace() }
+                    secretText?.let {
+                        mySecret = secretText.mapNotNull { "$it".toIntOrNull() }.toTypedArray()
+                        validSecret = secretText.all { it.isDigit() } && mySecret.size == secretLength
+                    }
+                } while (!validSecret && secretText != null)
 
-                } while (mySecret.size != secretLength)
-
-                if(!noHuman){
+                if (validSecret) {
                     val humanPlayer = controller.humanPlayer(mySecret)
                     humanView.actor = humanPlayer
                     gameView.start(playerCount, secretLength, humanPlayer)
-                }
+                } else gameView.start(playerCount, secretLength, null)
             } else gameView.start(playerCount, secretLength, null)
 
             dispose()
