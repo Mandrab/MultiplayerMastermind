@@ -8,7 +8,19 @@ import java.awt.Color
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
+/*
+This is the class that represents the view of the human player.
+It contains a grid with the names of all the players,
+JTextField to enter the guess for each of these and send it with button.
+It also allows you to send Try
+and at the bottom all information regarding the game is displayed.
 
+@param playersCount, number of players,
+@param secretLength, length of secret number,
+@param mySecret, human player's secret number.
+
+@author Baldini Paolo, Battistini Ylenia
+ */
 class HumanView(
         private val playersCount: Int,
         private val secretLength: Int,
