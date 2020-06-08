@@ -4,6 +4,7 @@ import akka.actor.typed.ActorRef
 
 /**
  * This class represent a End message.
+ *
  * @param sender, sender of message
  * @param winnerID, player who won.
  *

@@ -12,7 +12,7 @@ import message.*
 
 /**
  * This class represent a PlayerActor and implements AbstractPlayerActor class.
- * PlayerActor consists of a context and a playerID that identifies it.
+ * PlayerActor has a playerID that identifies it.
  * First, when the player is created, it defines its secret number using the Code class.
  *
  * @author Baldini Paolo, Battistini Ylenia
@@ -33,8 +33,10 @@ class PlayerActor private constructor(
     } }.build()
 
     /**
-     * When player received ExecTurn message check
-     * if all the values​for the respective players are present then send Try message to ArbiterActor if no send a Guess message.
+     * Execute a turn
+     *
+     * if guessed all the players codes, then send Try message to ArbiterActor
+     * else send a Guess message.
      */
     override val execTurn: (ExecTurn) -> Behavior<Message> = { exec -> also {
         if (playersStates.filterNot { it.key == playerID }.all { it.value.found }) {
@@ -51,8 +53,9 @@ class PlayerActor private constructor(
     } }
 
     /**
-     * When player received a CheckResult message check if the message was addressed to him
-     * and set number of digits guessed in the right place and the number of digits guessed in the wrong place.
+     * Check if result message is addressed to him
+     * In that case, set number of digits guessed in the right
+     * place and the number of digits guessed in the wrong place.
      */
     override val checkResult: (CheckResult) -> Behavior<Message> = { result -> also {
         if (result.attackerID == playerID) lastAttack?.let {
@@ -63,9 +66,8 @@ class PlayerActor private constructor(
     } }
 
     /**
-     * When player received a WannaTry message,
      * if the player wants to try to win send Try message containing the secret values for all players
-     * if instead he does not want to try send a Try message with null attempt.
+     * if instead he does not want, send a Try message with null attempt.
      */
     override val wannaTry: (WannaTry) -> Behavior<Message> = { result -> also {
         if (playersStates.filterNot { it.key == playerID }.values.all { it.found }) {
@@ -78,8 +80,8 @@ class PlayerActor private constructor(
     override val lostTurn: (LostTurn) -> Behavior<Message> = { this }
 
     /**
-     * When player received Ban message if the playerID is equal to his then he blocks his behavior,
-     * if not he delete the banned player from the list of players.
+     * if the playerID is equal to his then he blocks his behavior,
+     * if not, he delete the banned player from the list of players.
      */
     override val ban: (Ban) -> Behavior<Message> = {
         if (it.playerID == playerID) {
@@ -91,12 +93,12 @@ class PlayerActor private constructor(
     }
 
     /**
-     * When player received a StopGame message he blocks his behaviour.
+     * When player receives a StopGame message he blocks his behaviour.
      */
     override val stopGame: (StopGame) -> Behavior<Message> = { Behaviors.stopped() }
 
     /**
-     * When player received a End message he blocks his behaviour.
+     * When player receives a End message he blocks his behaviour.
      */
     override val end: (End) -> Behavior<Message> = { Behaviors.stopped() }
 
@@ -108,7 +110,7 @@ class PlayerActor private constructor(
     } }
 
     /**
-     * The player registers to be able to receive attempts.
+     * The player registers to be able to receive attempts results.
      */
     companion object {
         fun create(ID: String): Behavior<Message> = Behaviors.setup {
@@ -117,5 +119,8 @@ class PlayerActor private constructor(
         }
     }
 
+    /**
+     * Self message to execute long running tasks
+     */
     private inner class Update: Message { override val sender: ActorRef<Message> = context.self }
 }

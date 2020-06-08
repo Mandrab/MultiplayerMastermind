@@ -3,7 +3,8 @@ package message
 import akka.actor.typed.ActorRef
 
 /**
- * This class represent a GamePlayers
+ * This class represent a GamePlayers message
+ *
  * @param sender, sender of message
  * @param players, list of ActorRef
  *

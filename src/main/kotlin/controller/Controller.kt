@@ -14,8 +14,7 @@ typealias TypedActorSystem = akka.actor.typed.ActorSystem<Message>
 typealias TypedProps = akka.actor.typed.Props
 
 /**
- * This is a Controller class.
- * It create an Arbiter Actor and set View.
+ * It creates an Arbiter Actor and set View.
  *
  * @author Baldini Paolo, Battistini Ylenia
  */

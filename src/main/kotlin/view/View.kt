@@ -1,7 +1,7 @@
 package view
 
 /**
- * This is a View Interface .
+ * This is the interface for the View
  *
  * @author Baldini Paolo, Battistini Ylenia
  */

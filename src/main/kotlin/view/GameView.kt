@@ -8,8 +8,9 @@ import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
 import kotlin.system.exitProcess
+
 /**
- * This class contains all the information for each player (attempts, lost, banned player)
+ * This class contains all the information for each player (attempts, lost turns, banned players)
  *
  * @author Baldini Paolo, Battistini Ylenia
  */
@@ -127,7 +128,7 @@ class GameView : JFrame() {
     }
 
     /**
-     * This method create a JOptionPane for winner.
+     * This method create a Dialog for winner.
      *
      * @param value, player who won.
      */

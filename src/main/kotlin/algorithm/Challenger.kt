@@ -1,7 +1,8 @@
 package algorithm
 
 /**
- * Interface that represent methods that a player that aim to discover the secret code must implements.
+ * Interface that represent methods that a player that aim
+ * to discover the secret code must implements.
  *
  * @author Paolo Baldini
  */

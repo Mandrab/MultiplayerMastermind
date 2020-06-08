@@ -4,6 +4,7 @@ import akka.actor.typed.ActorRef
 
 /**
  * This class represent a Guess message.
+ *
  * @param sender, sender of message
  * @param turn, represent number of turn
  * @param attempt, number of attempt

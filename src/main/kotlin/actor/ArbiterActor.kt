@@ -10,8 +10,7 @@ import java.time.Duration
 import kotlin.random.Random
 
 /**
- * This is a ArbiterActor class.
- * This class contains the management of the game by sending messages to the players.
+ * This actor manages the game by sending messages to the players.
  *
  * @author Baldini Paolo, Battistini Ylenia
  */
@@ -47,7 +46,7 @@ class ArbiterActor: AbstractActor() {
     }
 
     /**
-     * When arbiter received startGame he call start method and when it received stopGame he call endGame method.
+     * Initial behaviour
      */
     override fun createReceive(): Receive = receiveBuilder()
             .match(StartGame::class.java, start)
@@ -55,10 +54,11 @@ class ArbiterActor: AbstractActor() {
             .build()
 
     /**
-     * When arbiter received Guess message he call guess method and when it received stopGame he call endGame method.
-     * If arbiter received Try message, check if the player who sent the message is the one who has the turn.
-     * If so then change its behavior to receive tryWin.
-     * If arbiter received ReceiveTimeout message sends LostTurn message to player and view and he call turn method.
+     * Behaviour handled when expecting a guess/try message
+     *
+     * On Try message, check if the player who sent the message is the one who has the turn.
+     *      If so then change its behavior to receive tryWin.
+     * On ReceiveTimeout message sends LostTurn message to player and view and call turn method.
      */
     private fun receiveGuess(): Receive = receiveBuilder()
             .match(Guess::class.java, guess)
@@ -73,8 +73,9 @@ class ArbiterActor: AbstractActor() {
             .build()
 
     /**
-     * When arbiter received CheckResult message he call guessResult method and when it received stopGame he call endGame method.
-     * If arbiter received ReceiveTimeout message check that the player is not null and postpone the Check message.
+     * Behaviour handled when expecting a check-result
+     *
+     * On ReceiveTimeout message resend the check request.
      */
     private fun receiveCheckGuess(): Receive = receiveBuilder()
             .match(CheckResult::class.java, guessResult)
@@ -85,10 +86,11 @@ class ArbiterActor: AbstractActor() {
 
 
     /**
-     * When arbiter received Try message he call tryWin method, when received CheckResult message he call a checkWin method
-     * and when it received stopGame he call endGame method.
-     * If arbiter received ReceiveTimeout message look for the player for which there is last attempt and postpone Check message.
-     * If last attempt is null send LostTurn message to viewActor.
+     * Behaviour handled when a player respond to a try. If it effectively try, check every player code
+     *
+     * On ReceiveTimeout message:
+     *      if player has not tried, call turn method (he lost the turn)
+     *      otherwise resend check request to everyone who has not replied
      */
     private fun receiveTryWin(): Receive = receiveBuilder()
             .match(Try::class.java, tryWin)
@@ -107,9 +109,9 @@ class ArbiterActor: AbstractActor() {
             .build()
 
     /**
-     * This is a start method.
-     * When the arbiter received a StartGame message he creates the player and sends the StartGame message.
-     * If there is also a human palyer he creates a HumanPlayerActor.
+     * When the arbiter received a StartGame message he creates the player
+     * and sends them the StartGame message.
+     * If there is also a human-player he creates a HumanPlayerActor.
      */
     private val start: (StartGame) -> Unit = { msg ->
         viewActor = msg.sender
@@ -132,9 +134,8 @@ class ArbiterActor: AbstractActor() {
     }
 
     /**
-     * This is a guess method.
-     * When the arbiter received a Guess message check if the player who sent the message is the one who has the turn and change
-     * its behaviour.
+     * When the arbiter receives a Guess message check if the player who
+     * sent the message is the one who has the turn and eventually change the behaviour.
      * Also send to defender a Check message.
      */
     private val guess: (Guess) -> Unit = {
@@ -146,8 +147,8 @@ class ArbiterActor: AbstractActor() {
     }
 
     /**
-     * This is a guessResult method.
-     * When arbiter received a CheckResult message checks and change it behaviour in receiveTryWin.
+     * When arbiter received a CheckResult message do checks
+     * and change behaviour to receive Try-Win message.
      * Also send a WannaTry message to player who sent the message.
      */
     private val guessResult: (result: CheckResult) -> Unit = { r ->
@@ -159,9 +160,9 @@ class ArbiterActor: AbstractActor() {
     }
 
     /**
-     * This is a tryWin method.
-     * When arbiter received a Try message check if the player who sent the message is the one who has the turn and if the turn matches
-     * and foreach player send a Check message.
+     * When arbiter received a Try message check if the player who sent the message
+     * is the one who has the turn and if the turn matches.
+     * In this case, send to each player a Check message.
      */
     private val tryWin: (Try) -> Unit = { t ->
         if (t.sender == attempterPlayer && t.turn == turnNumber) {
@@ -178,7 +179,7 @@ class ArbiterActor: AbstractActor() {
 
     /**
      * This method manages turn randomly.
-     * For each turn, send a ExecTurn message to the player that it's his turn.
+     * For each turn, send a ExecTurn message to the player who has the turn
      */
     private fun turn() {
         if (!playerTurn.hasNext()) {
@@ -192,11 +193,10 @@ class ArbiterActor: AbstractActor() {
     }
 
     /**
-     * This is a checkWin method.
      * When arbiter received a CheckResult message he
      * check if a black value are equal to the length of the secret value and,
      * if the player has guessed the number for each player, send End message to everyone,
-     * else send a Ban message to player who sent CheckResult.
+     * else send a Ban message to attempter player (broadcast information).
      */
     private val checkWin: (response: CheckResult) -> Unit = {
         if (lastTry != null && it.attackerID == turnPlayerID && it.turn == turnNumber) {
@@ -228,12 +228,12 @@ class ArbiterActor: AbstractActor() {
     }
 
     /**
-     * This is a endGame method.
-     * When arbiter received a StopGame message send it message to all the children, then kill it and kill yourself.
+     * When arbiter received a StopGame message send it message to all the children,
+     * then kill them and kill yourself.
      */
     private val endGame: (StopGame?) -> Unit = {
         players.values.forEach { it.tell(StopGame(typedSelf)) }
-        context.children.forEach { context.stop(it) } // così uccide i figli
-        context.stop(context.self) //così si auto uccide
+        context.children.forEach { context.stop(it) }
+        context.stop(context.self)
     }
 }

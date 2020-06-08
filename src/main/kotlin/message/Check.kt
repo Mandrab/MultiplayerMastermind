@@ -4,8 +4,9 @@ import akka.actor.typed.ActorRef
 
 /**
  * This class represent a Check message.
+ *
  * @param sender, sender of message
- * @param attempt, attempt number
+ * @param attempt, attempted code
  * @param attackerID, player who send message
  * @param defenderID, player i want to guess
  * @param turn, represent number of turn.

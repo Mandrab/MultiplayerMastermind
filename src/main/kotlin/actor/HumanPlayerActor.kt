@@ -10,8 +10,8 @@ import message.*
 import view.HumanView
 
 /**
- * This class represent a HumanPlayerActor.
- * This class implements AbstractPlayerActor class because the human player is considered like the others.
+ * This class represent a Human Player.
+ * Implements AbstractPlayerActor class because the human player is considered like other players.
  * It can receive the same messages but when it receives them it manages them using a HumanView.
  *
  * @author Baldini Paolo, Battistini Ylenia
@@ -61,7 +61,7 @@ class HumanPlayerActor private constructor(
     }
 
     /**
-     * The human player registers to be able to receive attempts.
+     * The human player registers to be able to receive attempts results.
      */
     companion object {
         fun create(ID: String, secret: Array<Int>, view: HumanView, arbiter: ActorRef<Message>): Behavior<Message> =

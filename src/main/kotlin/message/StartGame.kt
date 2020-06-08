@@ -4,6 +4,7 @@ import akka.actor.typed.ActorRef
 
 /**
  * This class represent a StartGame message.
+ *
  * @param sender, sender of message
  * @param playerCount, number of player
  * @param secretLength, length of secret number

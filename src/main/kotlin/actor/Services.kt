@@ -12,7 +12,7 @@ typealias TypedActorRef<T> = akka.actor.typed.ActorRef<T>
 
 /**
  * This class gives the possibility to register for the reception of some messages including StartGame and StopGame.
- * It provides the ability to send messages to everyone in broadcast or to a single actor in unicast.
+ * It provides the ability to send messages to every subscriber (broadcast) or to a single actor of them (unicast).
  *
  * @author Baldini Paolo, Battistini Ylenia.
  */

@@ -7,8 +7,7 @@ import message.*
 import view.GameView
 
 /**
- * This is a ViewActor class.
- * This class when received message call a view method to update information.
+ * This class acts like a bridge between view and systems' actor
  *
  * @author Baldini Paolo, Battistini Ylenia
  */
@@ -29,7 +28,7 @@ class ViewActor(context: ActorContext<Message>, private val view: GameView) : Ab
             } }.build()
 
     /**
-     * When viewActor received message he call a view method to update a view information.
+     * When viewActor received message he call a view method to update information.
      */
     override fun createReceive(): Receive<Message> = newReceiveBuilder()
             .onMessage(CheckResult::class.java) { apply {
@@ -46,7 +45,7 @@ class ViewActor(context: ActorContext<Message>, private val view: GameView) : Ab
             .build()
 
     /**
-     * ViewActor registers to be able to receive attempts and then it start.
+     * ViewActor registers to be able to receive attempts results and then it start.
      */
     companion object {
         fun create(view: GameView): Behavior<Message> = Behaviors.setup {

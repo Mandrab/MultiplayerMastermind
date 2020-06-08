@@ -6,7 +6,8 @@ import java.awt.GridBagLayout
 import javax.swing.*
 
 /**
- * This class is the main view where the user can choose the number of players, the length of the secret number and if there is also a human player.
+ * This class is the main view where the user can choose the number of players,
+ * the length of the secret number and if there is also a human player.
  *
  * @param controller, Controller
  *

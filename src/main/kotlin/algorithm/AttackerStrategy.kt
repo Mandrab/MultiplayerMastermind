@@ -3,7 +3,8 @@ package algorithm
 import kotlin.math.pow
 
 /**
- * This class implements an algorithm that focus on speed and memory usage instead of use the minimum number of moves.
+ * This class implements an algorithm that focus on speed and
+ * memory usage instead of use the minimum number of moves.
  *
  * @author Paolo Baldini
  */

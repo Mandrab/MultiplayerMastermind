@@ -1,7 +1,7 @@
 package algorithm
 
 /**
- * Implementation of mode-maker interface.
+ * Implementation of code-maker interface.
  *
  * @author Paolo Baldini
  */

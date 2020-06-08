@@ -4,6 +4,7 @@ import akka.actor.typed.ActorRef
 
 /**
  * This class represent a Ban message.
+ *
  * @param sender, sender of message
  * @param palyerID, id of player
  *
