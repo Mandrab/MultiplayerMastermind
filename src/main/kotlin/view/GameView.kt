@@ -8,10 +8,10 @@ import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
 import kotlin.system.exitProcess
-/*
-This class contains all the information for each player (attempts, lost, banned player)
-
-@author Baldini Paolo, Battistini Ylenia
+/**
+ * This class contains all the information for each player (attempts, lost, banned player)
+ *
+ * @author Baldini Paolo, Battistini Ylenia
  */
 class GameView : JFrame() {
     private val players = mutableMapOf<String, Dialog>()
@@ -73,23 +73,23 @@ class GameView : JFrame() {
         }
     }
 
-    /*
-    This method add a new player in a player list.
-
-     @param ID, playerID.
+    /**
+     * This method add a new player in a player list.
+     *
+     * @param ID, playerID.
      */
     fun newPlayer(ID: String) {
         players[ID] = Dialog(this, ID)
         playersID.setListData(players.keys.toTypedArray())
     }
 
-    /*
-    This method add a new result
-
-    @param attacker, player who send Guess
-    @param defender, player i want to guess
-    @param black, digits in right place
-    @param white, digits in wrong place
+    /**
+     * This method add a new result
+     *
+     * @param attacker, player who send Guess
+     * @param defender, player i want to guess
+     * @param black, digits in right place
+     * @param white, digits in wrong place
      */
     fun newResult(attacker: String, defender: String, black: Int, white: Int) {
         players[attacker]?.let {
@@ -99,10 +99,10 @@ class GameView : JFrame() {
         }
     }
 
-    /*
-    This method add a new ban in a player list.
-
-     @param attacker, playerID.
+    /**
+     * This method add a new ban in a player list.
+     *
+     * @param attacker, playerID.
      */
     fun newBan(attacker: String) {
         players[attacker]?.let {
@@ -112,11 +112,11 @@ class GameView : JFrame() {
         }
     }
 
-    /*
-    This method add a lost turn string in a player list.
-
-     @param attacker, playerID.
-     @param turn, represent turn number
+    /**
+     * This method add a lost turn string in a player list.
+     *
+     * @param attacker, playerID.
+     * @param turn, represent turn number
      */
     fun newLostTurn(attacker: String, turn: Int){
         players[attacker]?.let {
@@ -126,10 +126,10 @@ class GameView : JFrame() {
         }
     }
 
-    /*
-    This method create a JOptionPane for winner.
-
-     @param value, player who won.
+    /**
+     * This method create a JOptionPane for winner.
+     *
+     * @param value, player who won.
      */
     fun newWin(value:String) {
         JOptionPane.showMessageDialog(this, value,

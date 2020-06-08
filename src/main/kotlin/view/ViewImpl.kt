@@ -5,12 +5,12 @@ import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
 
-/*
-This class is the main view where the user can choose the number of players, the length of the secret number and if there is also a human player.
-
-@param controller, Controller
-
-@author Baldini Paolo, Battistini Ylenia
+/**
+ * This class is the main view where the user can choose the number of players, the length of the secret number and if there is also a human player.
+ *
+ * @param controller, Controller
+ *
+ * @author Baldini Paolo, Battistini Ylenia
  */
 class ViewImpl(controller: Controller) : JFrame(), View {
     private val playerCountField = JTextField("6")

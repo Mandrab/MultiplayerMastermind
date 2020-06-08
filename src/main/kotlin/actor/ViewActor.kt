@@ -6,17 +6,17 @@ import akka.actor.typed.receptionist.Receptionist
 import message.*
 import view.GameView
 
-/*
-  This is a ViewActor class.
-  This class when received message call a view method to update information.
-
-  @author Baldini Paolo, Battistini Ylenia
+/**
+ * This is a ViewActor class.
+ * This class when received message call a view method to update information.
+ *
+ * @author Baldini Paolo, Battistini Ylenia
  */
 class ViewActor(context: ActorContext<Message>, private val view: GameView) : AbstractBehavior<Message>(context) {
 
-    /*
-     When viewActor received StartGame message sends it message to those who have registered for the service.
-     If receive GamePlayers, foreach players call a newPlayer method for update a view information.
+    /**
+     * When viewActor received StartGame message sends it message to those who have registered for the service.
+     * If receive GamePlayers, foreach players call a newPlayer method for update a view information.
      */
     private fun start() : Behavior<Message> = newReceiveBuilder().onMessage(StartGame::class.java) {
                 Services.unicast(Services.Service.START_GAME.key, context, it); start()
@@ -28,8 +28,8 @@ class ViewActor(context: ActorContext<Message>, private val view: GameView) : Ab
                 it.players.forEach { view.newPlayer(Adapter.toClassic(it).path().name()) }
             } }.build()
 
-    /*
-     When viewActor received message he call a view method to update a view information.
+    /**
+     * When viewActor received message he call a view method to update a view information.
      */
     override fun createReceive(): Receive<Message> = newReceiveBuilder()
             .onMessage(CheckResult::class.java) { apply {
@@ -45,8 +45,8 @@ class ViewActor(context: ActorContext<Message>, private val view: GameView) : Ab
             .onMessage(Services.Unicast::class.java) { res -> apply { res.msg?.let { res.actor?.tell(res.msg) } } }
             .build()
 
-    /*
-     ViewActor registers to be able to receive attempts and then it start.
+    /**
+     * ViewActor registers to be able to receive attempts and then it start.
      */
     companion object {
         fun create(view: GameView): Behavior<Message> = Behaviors.setup {

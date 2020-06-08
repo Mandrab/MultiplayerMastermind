@@ -12,11 +12,12 @@ import view.ViewImpl
 
 typealias TypedActorSystem = akka.actor.typed.ActorSystem<Message>
 typealias TypedProps = akka.actor.typed.Props
-/*
-  This is a Controller class.
-  It create an Arbiter Actor and set View.
 
-  @author Baldini Paolo, Battistini Ylenia
+/**
+ * This is a Controller class.
+ * It create an Arbiter Actor and set View.
+ *
+ * @author Baldini Paolo, Battistini Ylenia
  */
 class Controller {
     private val system = ActorSystem.create("Mastermind")

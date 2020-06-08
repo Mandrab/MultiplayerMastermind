@@ -1,9 +1,9 @@
 package view
 
-/*
-This is a View Interface .
-
-@author Baldini Paolo, Battistini Ylenia
+/**
+ * This is a View Interface .
+ *
+ * @author Baldini Paolo, Battistini Ylenia
  */
 interface View {
 

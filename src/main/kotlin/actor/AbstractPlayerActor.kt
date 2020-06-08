@@ -5,11 +5,11 @@ import akka.actor.typed.javadsl.*
 import algorithm.Code
 import algorithm.CodeMaker
 import message.*
-/*
-This is an abstract class for player behaviour.
-This class contains all the messages that the player can handle.
-
-@author Baldini Paolo, Battistini Ylenia
+/**
+ * This is an abstract class for player behaviour.
+ * This class contains all the messages that the player can handle.
+ *
+ * @author Baldini Paolo, Battistini Ylenia
  */
 abstract class AbstractPlayerActor(context: ActorContext<Message>) : AbstractBehavior<Message>(context), CodeMaker {
 

@@ -8,12 +8,13 @@ import akka.actor.typed.receptionist.Receptionist
 import algorithm.Code
 import message.*
 import view.HumanView
-/*
-This class represent a HumanPlayerActor.
-This class implements AbstractPlayerActor class because the human player is considered like the others.
-It can receive the same messages but when it receives them it manages them using a HumanView.
 
-@author Baldini Paolo, Battistini Ylenia
+/**
+ * This class represent a HumanPlayerActor.
+ * This class implements AbstractPlayerActor class because the human player is considered like the others.
+ * It can receive the same messages but when it receives them it manages them using a HumanView.
+ *
+ * @author Baldini Paolo, Battistini Ylenia
  */
 class HumanPlayerActor private constructor(
         context: ActorContext<Message>,
@@ -59,8 +60,8 @@ class HumanPlayerActor private constructor(
         Behaviors.stopped()
     }
 
-    /*
-    The human player registers to be able to receive attempts.
+    /**
+     * The human player registers to be able to receive attempts.
      */
     companion object {
         fun create(ID: String, secret: Array<Int>, view: HumanView, arbiter: ActorRef<Message>): Behavior<Message> =

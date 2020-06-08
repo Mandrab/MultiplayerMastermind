@@ -2,16 +2,16 @@ package message
 
 import akka.actor.typed.ActorRef
 
-/*
-This class represent a CheckResult message.
-@param sender, sender of message
-@param black, digits in correct place
-@param white, digits in wrong place
-@param attackerID, player who send message
-@param defenderID, player who made guess
-@param turn, represent number of turn.
-
-@author Baldini Paolo, Battistini Ylenia
+/**
+ * This class represent a CheckResult message.
+ * @param sender, sender of message
+ * @param black, digits in correct place
+ * @param white, digits in wrong place
+ * @param attackerID, player who send message
+ * @param defenderID, player who made guess
+ * @param turn, represent number of turn.
+ *
+ * @author Baldini Paolo, Battistini Ylenia
  */
 data class CheckResult(
         override val sender: ActorRef<Message>,
