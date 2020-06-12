@@ -16,6 +16,8 @@ This version of the game is however a multiplayer one, where a player should gue
 <img align="left" src="res/base_play.gif" alt="Basic play">
 <img align="right" src="res/human_player.gif" alt="Play with human">
 
+</br></br></br></br></br></br></br></br>
+
 ## The Adversary Algorithm
 
 Due to a possible high number of player and a length of codes that can vary, a solution like the one used in the *Five-guess algorithm* (who use *minimax* technique) was not feasible in terms of memory allocation. Due to that a new algorithm was implemented. This one does not focus on resolve the code in the minimun number of moves, but on the use of a lazy calculation for the next code to try. In fact, there is no need that a code must be discovered in a determined number of turn, but there is the necessity to use less memory as possible.
@@ -24,4 +26,6 @@ Due to a possible high number of player and a length of codes that can vary, a s
 
 In this paragraph, we don't desire to accurately describe how messages are passed, in which order, or the fault techniques adopted. We are only interested in show a macro-structure of the message-passing between the actors and the GUIs frames. That will be done through use of the following image.
 
-<img align="left" src="res/message-schema.png" alt="Message passing">
+<p align="center">
+  <img src="res/message-schema.png" alt="Message passing">
+</p>
